@@ -5,29 +5,26 @@ import {
   Database,
   Sparkles,
   Play,
-  Copy,
   Sun,
   Moon,
   FolderOpen,
-  Check,
   ArrowRight,
+  Download,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
 import SchemaSelector from "@/components/query-builder/SchemaSelector";
 import QueryBuilder from "@/components/query-builder/QueryBuilder";
+import QueryPreview from "@/components/query-builder/QueryPreview";
 import { useQueryStore } from "@/store/query-store";
-import { copyToClipboard } from "@/lib/utils";
+import { downloadFile } from "@/lib/utils";
 
 export default function Home() {
-  const [activeTab, setActiveTab] = useState<"sql" | "mongo" | "graphql">(
-    "sql",
-  );
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [copied, setCopied] = useState(false);
   const schemaId = useQueryStore((state) => state.schemaId);
   const setSchemaId = useQueryStore((state) => state.setSchemaId);
   const runValidation = useQueryStore((state) => state.runValidation);
+  const rootGroup = useQueryStore((state) => state.rootGroup);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -36,22 +33,9 @@ export default function Home() {
     localStorage.setItem("querycraft-theme", nextTheme);
   };
 
-  const handleCopy = async (text: string) => {
-    const success = await copyToClipboard(text);
-    if (success) {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
-  };
-
-  const getQueryString = () => {
-    if (activeTab === "sql") {
-      return `SELECT * FROM users\nWHERE age > 18\nAND status = 'active'`;
-    }
-    if (activeTab === "mongo") {
-      return `{\n  "age": { "$gt": 18 },\n  "status": "active"\n}`;
-    }
-    return `{\n  filter: {\n    age: { gt: 18 }\n    status: "active"\n  }\n}`;
+  const handleExport = () => {
+    const payload = JSON.stringify({ schemaId, query: rootGroup }, null, 2);
+    downloadFile(payload, `querycraft-${schemaId}-${Date.now()}.json`);
   };
 
   return (
@@ -173,130 +157,30 @@ export default function Home() {
           </div>
 
           <div className="flex flex-col gap-6">
-            <div className="panel p-5 flex flex-col gap-4">
-              <div className="flex items-center justify-between pb-3 border-b border-border-default">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
-                  Live Preview
-                </h3>
-                <div className="flex gap-1.5">
-                  <button
-                    onClick={() => setActiveTab("sql")}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                      activeTab === "sql"
-                        ? "bg-accent-primary text-text-inverse shadow-sm"
-                        : "text-text-secondary hover:text-text-primary"
-                    }`}
-                  >
-                    SQL
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("mongo")}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                      activeTab === "mongo"
-                        ? "bg-accent-primary text-text-inverse shadow-sm"
-                        : "text-text-secondary hover:text-text-primary"
-                    }`}
-                  >
-                    MongoDB
-                  </button>
-                  <button
-                    onClick={() => setActiveTab("graphql")}
-                    className={`px-2.5 py-1 text-xs font-bold rounded-md transition-all cursor-pointer ${
-                      activeTab === "graphql"
-                        ? "bg-accent-primary text-text-inverse shadow-sm"
-                        : "text-text-secondary hover:text-text-primary"
-                    }`}
-                  >
-                    GraphQL
-                  </button>
-                </div>
-              </div>
-
-              <div className="relative">
-                <div className="query-preview h-48 select-all">
-                  {activeTab === "sql" && (
-                    <>
-                      <span className="token-keyword">SELECT</span> *{" "}
-                      <span className="token-keyword">FROM</span> users{"\n"}
-                      <span className="token-keyword">WHERE</span> age &gt;{" "}
-                      <span className="token-number">18</span>
-                      {"\n"}
-                      <span className="token-keyword">AND</span> status ={" "}
-                      <span className="token-string">&apos;active&apos;</span>
-                    </>
-                  )}
-                  {activeTab === "mongo" && (
-                    <>
-                      <span className="token-punctuation">{"{"}</span>
-                      {"\n"}
-                      {"  "}
-                      <span className="token-field">&quot;age&quot;</span>
-                      <span className="token-punctuation">:</span>{" "}
-                      <span className="token-punctuation">{"{"}</span>{" "}
-                      <span className="token-keyword">&quot;$gt&quot;</span>
-                      <span className="token-punctuation">:</span>{" "}
-                      <span className="token-number">18</span>{" "}
-                      <span className="token-punctuation">{"}"}</span>
-                      <span className="token-punctuation">,</span>
-                      {"\n"}
-                      {"  "}
-                      <span className="token-field">&quot;status&quot;</span>
-                      <span className="token-punctuation">:</span>{" "}
-                      <span className="token-string">&quot;active&quot;</span>
-                      {"\n"}
-                      <span className="token-punctuation">{"}"}</span>
-                    </>
-                  )}
-                  {activeTab === "graphql" && (
-                    <>
-                      <span className="token-punctuation">{"{"}</span>
-                      {"\n"}
-                      {"  "}filter<span className="token-punctuation">:</span>{" "}
-                      <span className="token-punctuation">{"{"}</span>
-                      {"\n"}
-                      {"    "}age<span className="token-punctuation">:</span>{" "}
-                      <span className="token-punctuation">{"{"}</span> gt
-                      <span className="token-punctuation">:</span>{" "}
-                      <span className="token-number">18</span>{" "}
-                      <span className="token-punctuation">{"}"}</span>
-                      {"\n"}
-                      {"    "}status<span className="token-punctuation">:</span>{" "}
-                      <span className="token-string">&quot;active&quot;</span>
-                      {"\n"}
-                      {"  "}
-                      <span className="token-punctuation">{"}"}</span>
-                      {"\n"}
-                      <span className="token-punctuation">{"}"}</span>
-                    </>
-                  )}
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleCopy(getQueryString())}
-                  className="absolute top-2 right-2 p-1.5 border border-border-default hover:bg-bg-elevated"
-                >
-                  {copied ? (
-                    <Check className="w-3.5 h-3.5 text-accent-success" />
-                  ) : (
-                    <Copy className="w-3.5 h-3.5" />
-                  )}
-                </Button>
-              </div>
-            </div>
+            <QueryPreview />
 
             <div className="panel p-5">
               <div className="mb-4 flex items-center justify-between gap-3 border-b border-border-default pb-3">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
                   Saved Presets
                 </h3>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  icon={<FolderOpen className="w-3.5 h-3.5" />}
-                >
-                  Load Preset
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    icon={<Download className="w-3.5 h-3.5" />}
+                    onClick={handleExport}
+                  >
+                    Export
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    icon={<FolderOpen className="w-3.5 h-3.5" />}
+                  >
+                    Load Preset
+                  </Button>
+                </div>
               </div>
               <div className="flex flex-col gap-2.5">
                 <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
