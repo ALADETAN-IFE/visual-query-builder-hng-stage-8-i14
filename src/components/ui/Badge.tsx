@@ -2,7 +2,16 @@
 
 import React from "react";
 
-type BadgeVariant = "and" | "or" | "sql" | "mongo" | "graphql" | "default" | "success" | "warning" | "danger";
+type BadgeVariant =
+  | "and"
+  | "or"
+  | "sql"
+  | "mongo"
+  | "graphql"
+  | "default"
+  | "success"
+  | "warning"
+  | "danger";
 
 interface BadgeProps {
   variant?: BadgeVariant;
@@ -43,9 +52,7 @@ export default function Badge({
       `}
     >
       {dot && (
-        <span
-          className={`w-1.5 h-1.5 rounded-full bg-current animate-pulse`}
-        />
+        <span className={`w-1.5 h-1.5 rounded-full bg-current animate-pulse`} />
       )}
       {children}
     </span>

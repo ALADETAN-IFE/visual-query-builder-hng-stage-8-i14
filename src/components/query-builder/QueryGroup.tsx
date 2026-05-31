@@ -24,13 +24,14 @@ export default function QueryGroup({
   isRoot = false,
 }: QueryGroupProps) {
   const validationErrors = useQueryStore((state) => state.validationErrors);
+  const validationTriggered = useQueryStore((state) => state.validationTriggered);
   const setConjunction = useQueryStore((state) => state.setConjunction);
   const toggleCollapsed = useQueryStore((state) => state.toggleCollapsed);
   const addRule = useQueryStore((state) => state.addRule);
   const addGroup = useQueryStore((state) => state.addGroup);
   const removeNode = useQueryStore((state) => state.removeNode);
 
-  const groupError = getNodeError(validationErrors, group.id);
+  const groupError = validationTriggered ? getNodeError(validationErrors, group.id) : undefined;
   const depthColor = getDepthColor(depth);
 
   return (

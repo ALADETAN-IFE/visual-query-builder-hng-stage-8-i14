@@ -18,21 +18,21 @@ export interface OperatorDefinition {
   value: Operator;
   label: string;
   symbol: string;
-  types: FieldType[]; // Which field types support this operator
+  types: FieldType[];
 }
 
 export interface SchemaField {
-  id: string; // e.g. "age"
-  label: string; // e.g. "Age"
+  id: string;
+  label: string;
   type: FieldType;
   placeholder?: string;
-  options?: { value: string; label: string }[]; // For enum fields
+  options?: { value: string; label: string }[];
   defaultValue?: string | number | boolean;
 }
 
 export interface Schema {
-  id: string; // e.g. "users"
-  label: string; // e.g. "Users Table"
+  id: string;
+  label: string;
   description: string;
   fields: SchemaField[];
 }
@@ -44,7 +44,7 @@ export interface QueryRule {
   type: "rule";
   field: string;
   operator: Operator;
-  value: unknown; // Can be string, number, array, boolean, etc.
+  value: unknown;
 }
 
 export interface QueryGroup {

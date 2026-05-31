@@ -9,7 +9,6 @@ import {
   Sun,
   Moon,
   FolderOpen,
-  Save,
   Check,
   ArrowRight,
 } from "lucide-react";
@@ -28,6 +27,7 @@ export default function Home() {
   const [copied, setCopied] = useState(false);
   const schemaId = useQueryStore((state) => state.schemaId);
   const setSchemaId = useQueryStore((state) => state.setSchemaId);
+  const runValidation = useQueryStore((state) => state.runValidation);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -56,7 +56,6 @@ export default function Home() {
 
   return (
     <div className="flex flex-col flex-1 min-h-screen bg-bg-primary text-text-primary">
-      {/* ─── Header ─── */}
       <header className="sticky top-0 z-50 glass border-b border-border-default">
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-3">
           <div className="flex items-center gap-3">
@@ -75,13 +74,11 @@ export default function Home() {
           </div>
 
           <div className="flex items-center gap-4">
-            {/* Quick presets badge */}
             <div className="hidden md:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-accent-secondary/10 text-accent-secondary text-xs font-semibold">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Interactive Workspace</span>
             </div>
 
-            {/* Theme Selector */}
             <Button
               variant="ghost"
               size="sm"
@@ -99,60 +96,41 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ─── Main Work Area ─── */}
       <main className="flex-1 p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
-        {/* Schema / Preset Row */}
-        <div className="flex flex-col lg:flex-row gap-4">
-          <SchemaSelector
-            selectedSchemaId={schemaId}
-            onSchemaChange={setSchemaId}
-          />
-          <div className="flex gap-2 w-full lg:w-auto lg:items-center">
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex-1 lg:flex-initial"
-              icon={<FolderOpen className="w-3.5 h-3.5" />}
-            >
-              Load Preset
-            </Button>
-            <Button
-              variant="secondary"
-              size="sm"
-              className="flex-1 lg:flex-initial"
-              icon={<Save className="w-3.5 h-3.5" />}
-            >
-              Save Preset
-            </Button>
-          </div>
-        </div>
+        <SchemaSelector
+          selectedSchemaId={schemaId}
+          onSchemaChange={setSchemaId}
+        />
 
-        {/* Builder and Output side-by-side */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Left / Middle: Visual Query Builder */}
           <div className="lg:col-span-2 flex flex-col gap-4">
             <QueryBuilder />
 
             {/* Simulated execution panel placeholder */}
             <div className="panel p-5 animate-fade-in">
-              <div className="flex justify-between items-center pb-4 border-b border-border-default mb-4">
-                <div className="flex items-center gap-2">
+              <div className="flex justify-between items-center pb-4 border-b border-border-default mb-4 max-[500px]:flex-col max-[500px]:items-end max-[500px]:gap-3">
+                <div className="flex items-center gap-2 max-[500px]:w-full">
                   <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
                     Execution Results
                   </h3>
-                  <Badge variant="success">24 MATCHES</Badge>
+                  <Badge
+                    variant="success"
+                    className="px-3 py-1 text-[0.75rem] normal-case"
+                  >
+                    24 MATCHES
+                  </Badge>
                 </div>
                 <Button
                   variant="primary"
                   size="sm"
-                  className="bg-accent-primary flex items-center"
+                  className="bg-accent-primary flex items-center h-9"
                   icon={<Play className="w-3.5 h-3.5 text-text-inverse mr-1" />}
+                  onClick={runValidation}
                 >
                   Run Query
                 </Button>
               </div>
 
-              {/* Results table mock */}
               <div className="overflow-x-auto rounded-lg border border-border-default">
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
@@ -170,7 +148,12 @@ export default function Home() {
                       <td className="p-3 font-medium">Chidi Benson</td>
                       <td className="p-3">24</td>
                       <td className="p-3">
-                        <Badge variant="success">active</Badge>
+                        <Badge
+                          variant="success"
+                          className="px-3 py-1 text-[0.75rem]"
+                        >
+                          active
+                        </Badge>
                       </td>
                       <td className="p-3">Nigeria</td>
                     </tr>
@@ -189,9 +172,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Panel: Code Previews & Presets */}
           <div className="flex flex-col gap-6">
-            {/* Real-time Query Preview */}
             <div className="panel p-5 flex flex-col gap-4">
               <div className="flex items-center justify-between pb-3 border-b border-border-default">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
@@ -231,7 +212,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Syntax Preview window */}
               <div className="relative">
                 <div className="query-preview h-48 select-all">
                   {activeTab === "sql" && (
@@ -305,11 +285,19 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Presets / History list */}
             <div className="panel p-5">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary pb-3 border-b border-border-default mb-4">
-                Saved Presets
-              </h3>
+              <div className="mb-4 flex items-center justify-between gap-3 border-b border-border-default pb-3">
+                <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
+                  Saved Presets
+                </h3>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  icon={<FolderOpen className="w-3.5 h-3.5" />}
+                >
+                  Load Preset
+                </Button>
+              </div>
               <div className="flex flex-col gap-2.5">
                 <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
                   <div>
@@ -339,7 +327,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* ─── Footer ─── */}
       <footer className="border-t border-border-default bg-bg-surface/90 backdrop-blur px-6 py-4 mt-12">
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs text-text-tertiary">
           <div className="flex items-center gap-2 text-text-primary">

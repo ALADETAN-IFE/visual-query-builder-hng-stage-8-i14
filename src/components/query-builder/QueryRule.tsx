@@ -27,15 +27,22 @@ function getDefaultValue(field: SchemaField): unknown {
 
 export default function QueryRule({ rule, schema }: QueryRuleProps) {
   const validationErrors = useQueryStore((state) => state.validationErrors);
+  const validationTriggered = useQueryStore((state) => state.validationTriggered);
   const updateRule = useQueryStore((state) => state.updateRule);
   const removeNode = useQueryStore((state) => state.removeNode);
 
   const field = schema.fields.find((item) => item.id === rule.field) ?? schema.fields[0];
   const operators = getOperatorsForType(field.type);
 
-  const fieldError = getNodeError(validationErrors, rule.id, "field");
-  const operatorError = getNodeError(validationErrors, rule.id, "operator");
-  const valueError = getNodeError(validationErrors, rule.id, "value");
+  const fieldError = validationTriggered
+    ? getNodeError(validationErrors, rule.id, "field")
+    : undefined;
+  const operatorError = validationTriggered
+    ? getNodeError(validationErrors, rule.id, "operator")
+    : undefined;
+  const valueError = validationTriggered
+    ? getNodeError(validationErrors, rule.id, "value")
+    : undefined;
 
   const handleFieldChange = (fieldId: string) => {
     const nextField = schema.fields.find((item) => item.id === fieldId);

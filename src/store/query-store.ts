@@ -14,7 +14,7 @@ function createEmptyRule(schemaId: string): QueryRule {
   const schema = getSchemaById(schemaId);
   const firstField = schema?.fields[0];
   const operator = firstField
-    ? getOperatorsForType(firstField.type)[0]?.value ?? "equals"
+    ? (getOperatorsForType(firstField.type)[0]?.value ?? "equals")
     : "equals";
 
   return {
@@ -45,7 +45,7 @@ function createInitialRoot(schemaId: string): QueryGroup {
 function updateNodeInTree(
   group: QueryGroup,
   nodeId: string,
-  updater: (node: QueryGroup | QueryRule) => QueryGroup | QueryRule
+  updater: (node: QueryGroup | QueryRule) => QueryGroup | QueryRule,
 ): QueryGroup {
   if (group.id === nodeId) {
     return updater(group) as QueryGroup;
@@ -71,7 +71,7 @@ function removeNodeFromTree(group: QueryGroup, nodeId: string): QueryGroup {
     children: group.children
       .filter((child) => child.id !== nodeId)
       .map((child) =>
-        child.type === "group" ? removeNodeFromTree(child, nodeId) : child
+        child.type === "group" ? removeNodeFromTree(child, nodeId) : child,
       ),
   };
 }
@@ -79,7 +79,7 @@ function removeNodeFromTree(group: QueryGroup, nodeId: string): QueryGroup {
 function addChildToGroup(
   group: QueryGroup,
   parentId: string,
-  child: QueryRule | QueryGroup
+  child: QueryRule | QueryGroup,
 ): QueryGroup {
   if (group.id === parentId) {
     return { ...group, children: [...group.children, child] };
@@ -88,7 +88,7 @@ function addChildToGroup(
   return {
     ...group,
     children: group.children.map((node) =>
-      node.type === "group" ? addChildToGroup(node, parentId, child) : node
+      node.type === "group" ? addChildToGroup(node, parentId, child) : node,
     ),
   };
 }
@@ -97,6 +97,7 @@ interface QueryStore {
   schemaId: string;
   rootGroup: QueryGroup;
   validationErrors: ValidationError[];
+  validationTriggered: boolean;
 
   setSchemaId: (id: string) => void;
   addRule: (groupId: string) => void;
@@ -104,7 +105,7 @@ interface QueryStore {
   removeNode: (nodeId: string) => void;
   updateRule: (
     ruleId: string,
-    updates: Partial<Omit<QueryRule, "id" | "type">>
+    updates: Partial<Omit<QueryRule, "id" | "type">>,
   ) => void;
   setConjunction: (groupId: string, conjunction: LogicalOperator) => void;
   toggleCollapsed: (groupId: string) => void;
@@ -116,12 +117,14 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
   schemaId: "users",
   rootGroup: createInitialRoot("users"),
   validationErrors: [],
+  validationTriggered: false,
 
   setSchemaId: (id) => {
     set({
       schemaId: id,
       rootGroup: createInitialRoot(id),
       validationErrors: [],
+      validationTriggered: false,
     });
   },
 
@@ -130,7 +133,9 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
     set({
       rootGroup: addChildToGroup(rootGroup, groupId, createEmptyRule(schemaId)),
     });
-    get().runValidation();
+    if (get().validationTriggered) {
+      get().runValidation();
+    }
   },
 
   addGroup: (groupId) => {
@@ -140,7 +145,9 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
     set({
       rootGroup: addChildToGroup(rootGroup, groupId, newGroup),
     });
-    get().runValidation();
+    if (get().validationTriggered) {
+      get().runValidation();
+    }
   },
 
   removeNode: (nodeId) => {
@@ -150,7 +157,9 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
     set({
       rootGroup: removeNodeFromTree(rootGroup, nodeId),
     });
-    get().runValidation();
+    if (get().validationTriggered) {
+      get().runValidation();
+    }
   },
 
   updateRule: (ruleId, updates) => {
@@ -161,7 +170,9 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
         return { ...node, ...updates };
       }) as QueryGroup,
     });
-    get().runValidation();
+    if (get().validationTriggered) {
+      get().runValidation();
+    }
   },
 
   setConjunction: (groupId, conjunction) => {
@@ -188,10 +199,13 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
     const { schemaId, rootGroup } = get();
     const schema = getSchemaById(schemaId);
     if (!schema) {
-      set({ validationErrors: [] });
+      set({ validationErrors: [], validationTriggered: true });
       return;
     }
-    set({ validationErrors: validateQueryTree(rootGroup, schema) });
+    set({
+      validationErrors: validateQueryTree(rootGroup, schema),
+      validationTriggered: true,
+    });
   },
 
   resetQuery: () => {
@@ -199,13 +213,14 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
     set({
       rootGroup: createInitialRoot(schemaId),
       validationErrors: [],
+      validationTriggered: false,
     });
   },
 }));
 
 export function getErrorsForNode(
   errors: ValidationError[],
-  nodeId: string
+  nodeId: string,
 ): ValidationError[] {
   return errors.filter((error) => error.nodeId === nodeId);
 }
@@ -213,10 +228,10 @@ export function getErrorsForNode(
 export function getNodeError(
   errors: ValidationError[],
   nodeId: string,
-  field?: string
+  field?: string,
 ): string | undefined {
   const match = errors.find(
-    (error) => error.nodeId === nodeId && (!field || error.field === field)
+    (error) => error.nodeId === nodeId && (!field || error.field === field),
   );
   return match?.message;
 }
