@@ -88,7 +88,6 @@ export default function Select({
             </option>
           ))}
         </select>
-        {/* Chevron icon */}
         <svg
           className="absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-text-tertiary w-3.5 h-3.5"
           viewBox="0 0 20 20"

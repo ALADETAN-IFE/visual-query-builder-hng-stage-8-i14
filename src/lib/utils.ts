@@ -1,5 +1,6 @@
-// Lightweight class name merge utility (no external dependency)
-export function cn(...inputs: (string | number | boolean | undefined | null)[]): string {
+export function cn(
+  ...inputs: (string | number | boolean | undefined | null)[]
+): string {
   return inputs
     .filter((x) => typeof x === "string" || typeof x === "number")
     .map((x) => String(x).trim())
@@ -7,12 +8,10 @@ export function cn(...inputs: (string | number | boolean | undefined | null)[]):
     .join(" ");
 }
 
-// Generate unique IDs for query nodes
 export function generateId(): string {
   return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
 }
 
-// Format a date for display
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("en-US", {
@@ -24,10 +23,9 @@ export function formatDate(date: Date | string): string {
   });
 }
 
-// Debounce utility for search inputs
 export function debounce<T extends (...args: unknown[]) => unknown>(
   fn: T,
-  delay: number
+  delay: number,
 ): (...args: Parameters<T>) => void {
   let timeoutId: ReturnType<typeof setTimeout>;
   return (...args: Parameters<T>) => {
@@ -36,24 +34,20 @@ export function debounce<T extends (...args: unknown[]) => unknown>(
   };
 }
 
-// Deep clone an object (for immutable state updates)
 export function deepClone<T>(obj: T): T {
   return JSON.parse(JSON.stringify(obj));
 }
 
-// Truncate a string with ellipsis
 export function truncate(str: string, maxLength: number): string {
   if (str.length <= maxLength) return str;
   return str.slice(0, maxLength - 3) + "...";
 }
 
-// Copy text to clipboard
 export async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
     return true;
   } catch {
-    // Fallback for older browsers
     const textarea = document.createElement("textarea");
     textarea.value = text;
     textarea.style.position = "fixed";
@@ -71,8 +65,11 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-// Download content as a file
-export function downloadFile(content: string, filename: string, type = "application/json") {
+export function downloadFile(
+  content: string,
+  filename: string,
+  type = "application/json",
+) {
   const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -82,7 +79,6 @@ export function downloadFile(content: string, filename: string, type = "applicat
   URL.revokeObjectURL(url);
 }
 
-// Read a file as text
 export function readFileAsText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -92,7 +88,6 @@ export function readFileAsText(file: File): Promise<string> {
   });
 }
 
-// Nesting depth color
 export function getDepthColor(depth: number): string {
   const colors = [
     "var(--depth-0)",
