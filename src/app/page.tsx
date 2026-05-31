@@ -4,8 +4,6 @@ import React, { useState } from "react";
 import {
   Database,
   Sparkles,
-  Trash2,
-  Plus,
   Play,
   Copy,
   Sun,
@@ -13,28 +11,21 @@ import {
   FolderOpen,
   Save,
   Check,
-  Users,
-  Package,
-  ShoppingCart,
   ArrowRight,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
-import Select from "@/components/ui/Select";
-import Input from "@/components/ui/Input";
 import Badge from "@/components/ui/Badge";
+import SchemaSelector from "@/components/query-builder/SchemaSelector";
+import QueryBuilder from "@/components/query-builder/QueryBuilder";
+import { useQueryStore } from "@/store/query-store";
 import { copyToClipboard } from "@/lib/utils";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<"sql" | "mongo" | "graphql">("sql");
-  const [activeSchema, setActiveSchema] = useState<"users" | "products" | "orders">("users");
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [copied, setCopied] = useState(false);
-
-  const schemaIcon = {
-    users: { label: "Users Schema", icon: Users },
-    products: { label: "Products Schema", icon: Package },
-    orders: { label: "Orders Schema", icon: ShoppingCart },
-  }[activeSchema];
+  const schemaId = useQueryStore((state) => state.schemaId);
+  const setSchemaId = useQueryStore((state) => state.setSchemaId);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
@@ -105,27 +96,16 @@ export default function Home() {
       {/* ─── Main Work Area ─── */}
       <main className="flex-1 p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
         {/* Schema / Preset Row */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-bg-surface p-4 rounded-xl border border-border-default shadow-sm">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-semibold uppercase text-text-tertiary tracking-wider">Active Schema</span>
-            <Select
-              className="w-48 bg-bg-elevated font-medium"
-              size="sm"
-              leadingIcon={<schemaIcon.icon className="w-4 h-4" />}
-              value={activeSchema}
-              onChange={(event) => setActiveSchema(event.target.value as "users" | "products" | "orders")}
-              options={[
-                { value: "users", label: "Users Schema" },
-                { value: "products", label: "Products Schema" },
-                { value: "orders", label: "Orders Schema" }
-              ]}
-            />
-          </div>
-          <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="secondary" size="sm" className="flex-1 sm:flex-initial" icon={<FolderOpen className="w-3.5 h-3.5" />}>
+        <div className="flex flex-col lg:flex-row gap-4">
+          <SchemaSelector
+            selectedSchemaId={schemaId}
+            onSchemaChange={setSchemaId}
+          />
+          <div className="flex gap-2 w-full lg:w-auto lg:items-center">
+            <Button variant="secondary" size="sm" className="flex-1 lg:flex-initial" icon={<FolderOpen className="w-3.5 h-3.5" />}>
               Load Preset
             </Button>
-            <Button variant="secondary" size="sm" className="flex-1 sm:flex-initial" icon={<Save className="w-3.5 h-3.5" />}>
+            <Button variant="secondary" size="sm" className="flex-1 lg:flex-initial" icon={<Save className="w-3.5 h-3.5" />}>
               Save Preset
             </Button>
           </div>
@@ -135,107 +115,7 @@ export default function Home() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           {/* Left / Middle: Visual Query Builder */}
           <div className="lg:col-span-2 flex flex-col gap-4">
-            <div className="panel p-5 relative border-l-4 animate-fade-in" style={{ borderLeftColor: "var(--depth-0)" }}>
-              <div className="flex items-center justify-between pb-4 border-b border-border-default mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="flex bg-bg-elevated p-1 rounded-lg">
-                    <button className="px-3 py-1 text-xs font-bold rounded-md bg-accent-success text-text-inverse shadow-sm transition-all duration-150">
-                      AND
-                    </button>
-                    <button className="px-3 py-1 text-xs font-semibold rounded-md text-text-secondary hover:text-text-primary transition-all duration-150">
-                      OR
-                    </button>
-                  </div>
-                  <Badge variant="and">AND GROUP</Badge>
-                </div>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm" className="text-accent-danger border border-accent-danger/20 bg-accent-danger/5 hover:bg-accent-danger/10">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Rules List Placeholder */}
-              <div className="flex flex-col gap-3 pl-4 border-l-2 border-border-default ml-2">
-                {/* Rule Item 1 */}
-                <div className="flex flex-wrap items-center gap-3 bg-bg-elevated p-3 rounded-lg border border-border-default relative">
-                  <Select
-                    className="w-36 bg-bg-surface"
-                    size="sm"
-                    options={[
-                      { value: "age", label: "Age" },
-                      { value: "status", label: "Status" },
-                      { value: "country", label: "Country" }
-                    ]}
-                    defaultValue="age"
-                  />
-                  <Select
-                    className="w-32 bg-bg-surface"
-                    size="sm"
-                    options={[
-                      { value: "gt", label: "Greater Than (>)" },
-                      { value: "lt", label: "Less Than (<)" },
-                      { value: "eq", label: "Equals (=)" }
-                    ]}
-                    defaultValue="gt"
-                  />
-                  <Input
-                    className="w-24 bg-bg-surface"
-                    inputSize="sm"
-                    type="number"
-                    defaultValue={18}
-                  />
-                  <Button variant="ghost" size="sm" className="ml-auto text-text-tertiary hover:text-accent-danger">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-
-                {/* Rule Item 2 */}
-                <div className="flex flex-wrap items-center gap-3 bg-bg-elevated p-3 rounded-lg border border-border-default relative">
-                  <Select
-                    className="w-36 bg-bg-surface"
-                    size="sm"
-                    options={[
-                      { value: "age", label: "Age" },
-                      { value: "status", label: "Status" },
-                      { value: "country", label: "Country" }
-                    ]}
-                    defaultValue="status"
-                  />
-                  <Select
-                    className="w-32 bg-bg-surface"
-                    size="sm"
-                    options={[
-                      { value: "eq", label: "Equals (=)" },
-                      { value: "neq", label: "Not Equals (!=)" }
-                    ]}
-                    defaultValue="eq"
-                  />
-                  <Select
-                    className="w-32 bg-bg-surface"
-                    size="sm"
-                    options={[
-                      { value: "active", label: "Active" },
-                      { value: "inactive", label: "Inactive" }
-                    ]}
-                    defaultValue="active"
-                  />
-                  <Button variant="ghost" size="sm" className="ml-auto text-text-tertiary hover:text-accent-danger">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </Button>
-                </div>
-              </div>
-
-              {/* Action Buttons to add rule/group */}
-              <div className="flex items-center gap-3 mt-4 pt-4 border-t border-border-default">
-                <Button variant="secondary" size="sm" className="flex items-center" icon={<Plus className="w-3.5 h-3.5" />}>
-                  Add Rule
-                </Button>
-                <Button variant="secondary" size="sm" className="flex items-center" icon={<Plus className="w-3.5 h-3.5" />}>
-                  Add Subgroup
-                </Button>
-              </div>
-            </div>
+            <QueryBuilder />
 
             {/* Simulated execution panel placeholder */}
             <div className="panel p-5 animate-fade-in">
