@@ -98,7 +98,7 @@ export default function Button({
           />
         </svg>
       ) : icon ? (
-        <span className="flex-shrink-0">{icon}</span>
+        <span className="shrink-0">{icon}</span>
       ) : null}
       {children}
     </button>
