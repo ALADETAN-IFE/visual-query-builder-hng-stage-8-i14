@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Database,
   Sparkles,
@@ -26,6 +26,23 @@ export default function Home() {
   const setSchemaId = useQueryStore((state) => state.setSchemaId);
   const runValidation = useQueryStore((state) => state.runValidation);
   const rootGroup = useQueryStore((state) => state.rootGroup);
+
+  useEffect(() => {
+    // Load persisted theme
+    const savedTheme = localStorage.getItem("querycraft-theme") as "dark" | "light";
+    if (savedTheme) {
+      setTheme(savedTheme);
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    } else {
+      document.documentElement.setAttribute("data-theme", "dark");
+    }
+
+    // Load persisted schema
+    const savedSchema = localStorage.getItem("querycraft-schema");
+    if (savedSchema && savedSchema !== schemaId) {
+      setSchemaId(savedSchema);
+    }
+  }, []);
 
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";

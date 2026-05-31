@@ -22,18 +22,24 @@ type SortConfig = {
 export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps) {
   const schema = getSchemaById(schemaId);
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<any[]>([]);
+  
+  // Initialize results state with current simulated query to avoid mount/reload flashes
+  const [results, setResults] = useState<any[]>(() => {
+    return runQuerySimulator(rootGroup, schemaId);
+  });
+  
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: "", direction: null });
 
-  // Automatically evaluate query when schema or tree changes
+  // Automatically evaluate query ONLY when schema changes
   useEffect(() => {
     const matched = runQuerySimulator(rootGroup, schemaId);
     setResults(matched);
     setCurrentPage(1);
     setSortConfig({ key: "", direction: null });
-  }, [schemaId, rootGroup]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [schemaId]);
 
   // Execute query simulator manually with loading shimmer
   const handleRunQuery = () => {
@@ -255,8 +261,8 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
             </table>
           </div>
 
-          {/* Pagination Controls */}
-          {totalPages > 1 && (
+          {/* Pagination and Table controls - always rendered if there is data */}
+          {sortedResults.length > 0 && (
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <div className="flex items-center gap-2">
                 <span className="text-[0.6875rem] text-text-tertiary">
@@ -280,50 +286,52 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
                 </select>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-8 h-8 p-0"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((c) => Math.max(1, c - 1))}
-                  aria-label="Previous page"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                
-                {Array.from({ length: totalPages }, (_, i) => i + 1)
-                  .filter((p) => Math.abs(p - currentPage) <= 1 || p === 1 || p === totalPages)
-                  .map((p, index, array) => {
-                    const showEllipsis = index > 0 && p - array[index - 1] > 1;
-                    return (
-                      <React.Fragment key={p}>
-                        {showEllipsis && <span className="text-text-tertiary px-1 text-xs">...</span>}
-                        <button
-                          onClick={() => setCurrentPage(p)}
-                          className={`w-8 h-8 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-                            currentPage === p
-                              ? "bg-accent-primary text-text-inverse shadow-sm"
-                              : "bg-bg-elevated hover:bg-bg-inset text-text-secondary hover:text-text-primary"
-                          }`}
-                        >
-                          {p}
-                        </button>
-                      </React.Fragment>
-                    );
-                  })}
+              {totalPages > 1 && (
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-8 h-8 p-0"
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((c) => Math.max(1, c - 1))}
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((p) => Math.abs(p - currentPage) <= 1 || p === 1 || p === totalPages)
+                    .map((p, index, array) => {
+                      const showEllipsis = index > 0 && p - array[index - 1] > 1;
+                      return (
+                        <React.Fragment key={p}>
+                          {showEllipsis && <span className="text-text-tertiary px-1 text-xs">...</span>}
+                          <button
+                            onClick={() => setCurrentPage(p)}
+                            className={`w-8 h-8 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+                              currentPage === p
+                                ? "bg-accent-primary text-text-inverse shadow-sm"
+                                : "bg-bg-elevated hover:bg-bg-inset text-text-secondary hover:text-text-primary"
+                            }`}
+                          >
+                            {p}
+                          </button>
+                        </React.Fragment>
+                      );
+                    })}
 
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="w-8 h-8 p-0"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((c) => Math.min(totalPages, c + 1))}
-                  aria-label="Next page"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-              </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-8 h-8 p-0"
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((c) => Math.min(totalPages, c + 1))}
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </div>

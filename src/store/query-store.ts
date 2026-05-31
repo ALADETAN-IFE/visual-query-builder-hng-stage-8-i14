@@ -120,6 +120,9 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
   validationTriggered: false,
 
   setSchemaId: (id) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("querycraft-schema", id);
+    }
     set({
       schemaId: id,
       rootGroup: createInitialRoot(id),
