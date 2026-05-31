@@ -15,7 +15,6 @@ export default function QueryBuilder() {
   const validationTriggered = useQueryStore(
     (state) => state.validationTriggered,
   );
-  const runValidation = useQueryStore((state) => state.runValidation);
   const resetQuery = useQueryStore((state) => state.resetQuery);
 
   const schema = getSchemaById(schemaId);
