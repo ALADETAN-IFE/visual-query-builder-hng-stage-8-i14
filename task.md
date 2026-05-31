@@ -1,15 +1,3 @@
-:rocket: Frontend Wizards — Stage 8 @channel
-One Last Dance: Build a Visual Query Builder with Next.js
-
-:dart: Objective
-Build a highly interactive visual query builder that allows users to construct complex database/API queries through a graphical interface instead of writing raw query syntax manually.
-Think:
-
-Postman query builders
-Supabase filters
-MongoDB Compass
-GraphQL explorers
-advanced admin filtering systems
 # Stage 8 — Frontend Task
 
 🚀 Frontend Wizards — One Last Dance: Build a Visual Query Builder with Next.js
