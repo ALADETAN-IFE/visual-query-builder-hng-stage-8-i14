@@ -30,18 +30,22 @@ function highlightMongo(code: string): React.ReactNode[] {
   const lines = code.split("\n");
   return lines.flatMap((line, li) => {
     const parts: React.ReactNode[] = [];
-    const keyMatch = line.match(/^(\s*)"(\$?\w+)"(\s*:\s*)(.*)/);
-    if (keyMatch) {
-      const [, ws, key, colon, rest] = keyMatch;
-      const isOperator = key.startsWith("$");
-      parts.push(
-        <span key={`${li}-ws`}>{ws}</span>,
-        <span key={`${li}-key`} className={isOperator ? "token-keyword" : "token-field"}>{`"${key}"`}</span>,
-        <span key={`${li}-colon`} className="token-punctuation">{colon}</span>,
-        highlightMongoValue(rest, li),
-      );
+    if (/^\s*\/\//.test(line)) {
+      parts.push(<span key={`${li}-comment`} className="token-comment">{line}</span>);
     } else {
-      parts.push(<span key={`${li}-raw`}>{line}</span>);
+      const keyMatch = line.match(/^(\s*)"(\$?\w+)"(\s*:\s*)(.*)/);
+      if (keyMatch) {
+        const [, ws, key, colon, rest] = keyMatch;
+        const isOperator = key.startsWith("$");
+        parts.push(
+          <span key={`${li}-ws`}>{ws}</span>,
+          <span key={`${li}-key`} className={isOperator ? "token-keyword" : "token-field"}>{`"${key}"`}</span>,
+          <span key={`${li}-colon`} className="token-punctuation">{colon}</span>,
+          highlightMongoValue(rest, li),
+        );
+      } else {
+        parts.push(<span key={`${li}-raw`}>{line}</span>);
+      }
     }
     if (li < lines.length - 1) parts.push(<br key={`${li}-br`} />);
     return parts;
@@ -141,7 +145,6 @@ export default function QueryPreview() {
           ))}
         </div>
       </div>
-
       <div className="relative group">
         <div className="query-preview min-h-40 max-h-75 overflow-y-auto text-[0.8rem] leading-relaxed">
           {highlighted}

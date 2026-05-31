@@ -38,7 +38,7 @@ function createEmptyGroup(): QueryGroup {
 
 function createInitialRoot(schemaId: string): QueryGroup {
   const root = createEmptyGroup();
-  root.children = [createEmptyRule(schemaId), createEmptyRule(schemaId)];
+  root.children = [];
   return root;
 }
 

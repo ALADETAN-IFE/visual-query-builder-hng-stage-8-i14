@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { ChevronDown, ChevronRight, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Trash2, Filter, Plus, FolderPlus } from "lucide-react";
 import { QueryGroup as QueryGroupType, Schema } from "@/lib/types";
 import { useQueryStore, getNodeError } from "@/store/query-store";
 import { cn, getDepthColor } from "@/lib/utils";
@@ -111,20 +111,30 @@ export default function QueryGroup({
 
       {!group.collapsed && (
         <>
-          <div className="flex flex-col gap-3 pl-4 border-l-2 border-border-default ml-2 group-connector">
-            {group.children.map((child) =>
-              child.type === "rule" ? (
-                <QueryRule key={child.id} rule={child} schema={schema} />
-              ) : (
-                <QueryGroup
-                  key={child.id}
-                  group={child}
-                  schema={schema}
-                  depth={depth + 1}
-                />
-              )
-            )}
-          </div>
+          {group.children.length === 0 ? (
+            <div className="flex flex-col gap-3 pl-4 border-l-2 border-border-default ml-2 group-connector">
+              <div className="flex items-center justify-center bg-bg-elevated/40 border border-dashed border-border-default h-[54px] rounded-lg animate-fade-in">
+                <span className="text-xs text-text-tertiary font-semibold uppercase tracking-wider">
+                  No query
+                </span>
+              </div>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3 pl-4 border-l-2 border-border-default ml-2 group-connector">
+              {group.children.map((child) =>
+                child.type === "rule" ? (
+                  <QueryRule key={child.id} rule={child} schema={schema} />
+                ) : (
+                  <QueryGroup
+                    key={child.id}
+                    group={child}
+                    schema={schema}
+                    depth={depth + 1}
+                  />
+                )
+              )}
+            </div>
+          )}
 
           <div className="mt-4 pt-4 border-t border-border-default">
             <AddButton

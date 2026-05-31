@@ -16,6 +16,7 @@ import Badge from "@/components/ui/Badge";
 import SchemaSelector from "@/components/query-builder/SchemaSelector";
 import QueryBuilder from "@/components/query-builder/QueryBuilder";
 import QueryPreview from "@/components/query-builder/QueryPreview";
+import ResultsTable from "@/components/query-builder/ResultsTable";
 import { useQueryStore } from "@/store/query-store";
 import { downloadFile } from "@/lib/utils";
 
@@ -90,70 +91,7 @@ export default function Home() {
           <div className="lg:col-span-2 flex flex-col gap-4">
             <QueryBuilder />
 
-            {/* Simulated execution panel placeholder */}
-            <div className="panel p-5 animate-fade-in">
-              <div className="flex justify-between items-center pb-4 border-b border-border-default mb-4 max-[500px]:flex-col max-[500px]:items-end max-[500px]:gap-3">
-                <div className="flex items-center gap-2 max-[500px]:w-full">
-                  <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
-                    Execution Results
-                  </h3>
-                  <Badge
-                    variant="success"
-                    className="px-3 py-1 text-[0.75rem] normal-case"
-                  >
-                    24 MATCHES
-                  </Badge>
-                </div>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="bg-accent-primary flex items-center h-9"
-                  icon={<Play className="w-3.5 h-3.5 text-text-inverse mr-1" />}
-                  onClick={runValidation}
-                >
-                  Run Query
-                </Button>
-              </div>
-
-              <div className="overflow-x-auto rounded-lg border border-border-default">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead>
-                    <tr className="bg-bg-elevated text-text-secondary border-b border-border-default">
-                      <th className="p-3 font-semibold">ID</th>
-                      <th className="p-3 font-semibold">Name</th>
-                      <th className="p-3 font-semibold">Age</th>
-                      <th className="p-3 font-semibold">Status</th>
-                      <th className="p-3 font-semibold">Country</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b border-border-default last:border-0 hover:bg-bg-elevated/40">
-                      <td className="p-3 font-mono">1</td>
-                      <td className="p-3 font-medium">Chidi Benson</td>
-                      <td className="p-3">24</td>
-                      <td className="p-3">
-                        <Badge
-                          variant="success"
-                          className="px-3 py-1 text-[0.75rem]"
-                        >
-                          active
-                        </Badge>
-                      </td>
-                      <td className="p-3">Nigeria</td>
-                    </tr>
-                    <tr className="border-b border-border-default last:border-0 hover:bg-bg-elevated/40">
-                      <td className="p-3 font-mono">2</td>
-                      <td className="p-3 font-medium">Amara Okafor</td>
-                      <td className="p-3">31</td>
-                      <td className="p-3">
-                        <Badge variant="success">active</Badge>
-                      </td>
-                      <td className="p-3">Nigeria</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
+            <ResultsTable schemaId={schemaId} rootGroup={rootGroup} />
           </div>
 
           <div className="flex flex-col gap-6">

@@ -235,9 +235,13 @@ export function generateQuery(
   format: QueryFormat
 ): string {
   if (rootGroup.children.length === 0) {
-    if (format === "sql") return `SELECT * FROM ${schema.id} -- (no filters)`;
-    if (format === "mongo") return `{}\n/* No filters applied */`;
-    return `query {\n  ${schema.id} {\n    id\n    # No filters applied\n  }\n}`;
+    if (format === "sql") {
+      return `SELECT * FROM ${schema.id}`;
+    }
+    if (format === "mongo") {
+      return `{}`;
+    }
+    return `query {\n  ${schema.id} {\n    id\n  }\n}`;
   }
 
   if (format === "sql") return groupToSQL(rootGroup, schema);
