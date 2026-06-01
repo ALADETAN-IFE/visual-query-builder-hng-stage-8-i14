@@ -55,6 +55,11 @@ export default function QueryGroup({
     disabled: !isRoot || isOverlay,
   });
 
+  const { setNodeRef: setPlaceholderRef } = useDroppable({
+    id: "empty-placeholder-" + group.id,
+    disabled: isOverlay || group.children.length > 0,
+  });
+
   const style = isRoot
     ? undefined
     : {
@@ -172,7 +177,10 @@ export default function QueryGroup({
         <>
           {group.children.length === 0 ? (
             <div className="flex flex-col gap-3 pl-4 border-l-2 border-border-default ml-2 group-connector">
-              <div className="flex items-center justify-center bg-bg-elevated/40 border border-dashed border-border-default h-13.5 rounded-lg animate-fade-in">
+              <div
+                ref={setPlaceholderRef}
+                className="flex items-center justify-center bg-bg-elevated/40 border border-dashed border-border-default h-13.5 rounded-lg animate-fade-in"
+              >
                 <span className="text-xs text-text-tertiary font-semibold uppercase tracking-wider">
                   No query
                 </span>

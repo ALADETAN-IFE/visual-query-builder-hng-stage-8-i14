@@ -16,6 +16,9 @@ import {
   DragStartEvent,
   DragOverlay,
   type Modifier,
+  pointerWithin,
+  rectIntersection,
+  type CollisionDetection,
 } from "@dnd-kit/core";
 import { QueryNode } from "@/lib/types";
 
@@ -29,6 +32,40 @@ function findNode(node: QueryNode, id: string): QueryNode | null {
   }
   return null;
 }
+
+const customCollisionDetection = (
+  args: Parameters<CollisionDetection>[0],
+  rootGroupId: string,
+) => {
+  const pointerCollisions = pointerWithin(args);
+  if (pointerCollisions.length > 0) {
+    const itemCollisions = pointerCollisions.filter((c) => c.id !== rootGroupId);
+    if (itemCollisions.length > 0) {
+      return itemCollisions;
+    }
+    return pointerCollisions;
+  }
+
+  const rectCollisions = rectIntersection(args);
+  if (rectCollisions.length > 0) {
+    const itemCollisions = rectCollisions.filter((c) => c.id !== rootGroupId);
+    if (itemCollisions.length > 0) {
+      return itemCollisions;
+    }
+    return rectCollisions;
+  }
+
+  const centerCollisions = closestCenter(args);
+  if (centerCollisions.length > 0) {
+    const itemCollisions = centerCollisions.filter((c) => c.id !== rootGroupId);
+    if (itemCollisions.length > 0) {
+      return itemCollisions;
+    }
+    return centerCollisions;
+  }
+
+  return [];
+};
 
 const restrictToBuilderModifier: Modifier = ({ transform, activeNodeRect }) => {
   if (!activeNodeRect) return transform;
@@ -94,8 +131,13 @@ export default function QueryBuilder() {
     const { active, over } = event;
     if (!over) return;
 
-    if (active.id !== over.id) {
-      moveNode(String(active.id), String(over.id));
+    let overId = String(over.id);
+    if (overId.startsWith("empty-placeholder-")) {
+      overId = overId.replace("empty-placeholder-", "");
+    }
+
+    if (active.id !== overId) {
+      moveNode(String(active.id), overId);
     }
   };
 
@@ -161,7 +203,9 @@ export default function QueryBuilder() {
       )}
 
       <DndContext
-        collisionDetection={closestCenter}
+        collisionDetection={(args) =>
+          customCollisionDetection(args, rootGroup.id)
+        }
         modifiers={[restrictToBuilderModifier]}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
