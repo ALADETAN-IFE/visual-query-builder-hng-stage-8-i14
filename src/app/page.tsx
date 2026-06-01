@@ -25,7 +25,6 @@ export default function Home() {
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const schemaId = useQueryStore((state) => state.schemaId);
   const setSchemaId = useQueryStore((state) => state.setSchemaId);
-  const runValidation = useQueryStore((state) => state.runValidation);
   const rootGroup = useQueryStore((state) => state.rootGroup);
   const importQuery = useQueryStore((state) => state.importQuery);
 
@@ -80,7 +79,7 @@ export default function Home() {
             "Invalid query file format. The file must contain a valid schemaId and query group.",
           );
         }
-      } catch (err) {
+      } catch {
         alert(
           "Failed to parse the query file. Please make sure it's a valid JSON file.",
         );

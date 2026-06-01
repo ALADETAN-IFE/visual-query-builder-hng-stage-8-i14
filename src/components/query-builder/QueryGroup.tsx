@@ -14,6 +14,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useDroppable } from "@dnd-kit/core";
 
 interface QueryGroupProps {
   group: QueryGroupType;
@@ -49,6 +50,11 @@ export default function QueryGroup({
     isDragging,
   } = useSortable({ id: group.id, disabled: isRoot || isOverlay });
 
+  const { setNodeRef: setDroppableRef } = useDroppable({
+    id: group.id,
+    disabled: !isRoot || isOverlay,
+  });
+
   const style = isRoot
     ? undefined
     : {
@@ -67,7 +73,7 @@ export default function QueryGroup({
   return (
     <div
       id={isRoot ? "query-builder-panel" : undefined}
-      ref={!isRoot && !isOverlay ? setNodeRef : undefined}
+      ref={!isOverlay ? (isRoot ? setDroppableRef : setNodeRef) : undefined}
       style={
         !isRoot
           ? { ...style, borderLeftWidth: 4, borderLeftColor: depthColor }

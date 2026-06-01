@@ -7,10 +7,6 @@ export type QueryFormat = "sql" | "mongo" | "graphql";
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function getFieldLabel(schema: Schema, fieldId: string): string {
-  return schema.fields.find((f) => f.id === fieldId)?.label ?? fieldId;
-}
-
 function formatValue(value: unknown, type?: string): string {
   if (value === null || value === undefined || value === "") return "NULL";
   if (type === "string" || type === "enum") return `'${String(value)}'`;
@@ -136,10 +132,9 @@ function nodeToMongo(node: QueryNode): Record<string, unknown> {
   const group = node as QueryGroup;
   if (group.children.length === 0) return {};
 
-  const parts = group.children.map(nodeToMongo);
+  const parts = group.children.map((child) => nodeToMongo(child));
   const mongoOp = group.logicalOperator === "AND" ? "$and" : "$or";
 
-  if (parts.length === 1) return parts[0];
   return { [mongoOp]: parts };
 }
 

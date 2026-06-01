@@ -36,7 +36,7 @@ function createEmptyGroup(): QueryGroup {
   };
 }
 
-function createInitialRoot(schemaId: string): QueryGroup {
+function createInitialRoot(): QueryGroup {
   const root = createEmptyGroup();
   root.children = [];
   return root;
@@ -162,6 +162,19 @@ function insertNode(
 
   const childIndex = group.children.findIndex((c) => c.id === overId);
   if (childIndex !== -1) {
+    const child = group.children[childIndex];
+    if (
+      child.type === "group" &&
+      (nodeToInsert.type === "rule" || child.children.length === 0)
+    ) {
+      const updatedChild = {
+        ...child,
+        children: [...child.children, nodeToInsert],
+      };
+      const newChildren = [...group.children];
+      newChildren[childIndex] = updatedChild;
+      return { ...group, children: newChildren };
+    }
     const newChildren = [...group.children];
     newChildren.splice(childIndex, 0, nodeToInsert);
     return { ...group, children: newChildren };
@@ -213,7 +226,7 @@ export const useQueryStore = create<QueryStore>((set, get) => {
   const initialSchema = getInitialSchemaId();
   return {
     schemaId: initialSchema,
-    rootGroup: createInitialRoot(initialSchema),
+    rootGroup: createInitialRoot(),
     validationErrors: [],
     validationTriggered: false,
 
@@ -223,7 +236,7 @@ export const useQueryStore = create<QueryStore>((set, get) => {
       }
       set({
         schemaId: id,
-        rootGroup: createInitialRoot(id),
+        rootGroup: createInitialRoot(),
         validationErrors: [],
         validationTriggered: false,
       });
@@ -314,9 +327,8 @@ export const useQueryStore = create<QueryStore>((set, get) => {
     },
 
     resetQuery: () => {
-      const { schemaId } = get();
       set({
-        rootGroup: createInitialRoot(schemaId),
+        rootGroup: createInitialRoot(),
         validationErrors: [],
         validationTriggered: false,
       });
