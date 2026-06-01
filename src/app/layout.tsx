@@ -49,7 +49,6 @@ export default function RootLayout({
     >
       <body
         className="min-h-screen flex flex-col antialiased"
-        style={sora.style}
       >
         {children}
       </body>
