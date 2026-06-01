@@ -1,8 +1,12 @@
-import { QueryGroup, QueryRule, QueryNode } from "./types";
+import { QueryGroup, QueryRule } from "./types";
 import { MOCK_DATA, MockRecord } from "./mock-data";
 import { getSchemaById } from "./schemas";
 
-function evaluateRule(rule: QueryRule, record: MockRecord, schemaId: string): boolean {
+function evaluateRule(
+  rule: QueryRule,
+  record: MockRecord,
+  schemaId: string,
+): boolean {
   const schema = getSchemaById(schemaId);
   if (!schema) return false;
 
@@ -15,10 +19,14 @@ function evaluateRule(rule: QueryRule, record: MockRecord, schemaId: string): bo
 
   // Null check operators can evaluate even if recordValue is null/undefined
   if (rule.operator === "is_null") {
-    return recordValue === null || recordValue === undefined || recordValue === "";
+    return (
+      recordValue === null || recordValue === undefined || recordValue === ""
+    );
   }
   if (rule.operator === "is_not_null") {
-    return recordValue !== null && recordValue !== undefined && recordValue !== "";
+    return (
+      recordValue !== null && recordValue !== undefined && recordValue !== ""
+    );
   }
 
   // If record value is missing, other operators should return false
@@ -27,7 +35,7 @@ function evaluateRule(rule: QueryRule, record: MockRecord, schemaId: string): bo
   }
 
   // Normalize types for comparison
-  const normalize = (val: any) => {
+  const normalize = (val: unknown) => {
     if (fieldType === "number") {
       const num = Number(val);
       return isNaN(num) ? 0 : num;
@@ -36,7 +44,8 @@ function evaluateRule(rule: QueryRule, record: MockRecord, schemaId: string): bo
       return val === true || String(val) === "true" || String(val) === "1";
     }
     if (fieldType === "date") {
-      return new Date(val).getTime();
+      // Coerce to string then parse to avoid narrowing issues with unknown
+      return new Date(String(val)).getTime();
     }
     return String(val).toLowerCase(); // Case-insensitive comparison for strings
   };
@@ -99,10 +108,14 @@ function evaluateRule(rule: QueryRule, record: MockRecord, schemaId: string): bo
   }
 }
 
-function evaluateGroup(group: QueryGroup, record: MockRecord, schemaId: string): boolean {
+function evaluateGroup(
+  group: QueryGroup,
+  record: MockRecord,
+  schemaId: string,
+): boolean {
   if (group.children.length === 0) return true; // Empty group matches everything
 
-  if (group.conjunction === "AND") {
+  if (group.logicalOperator === "AND") {
     return group.children.every((child) => {
       if (child.type === "rule") {
         return evaluateRule(child, record, schemaId);
@@ -121,7 +134,7 @@ function evaluateGroup(group: QueryGroup, record: MockRecord, schemaId: string):
 
 export function runQuerySimulator(
   rootGroup: QueryGroup,
-  schemaId: string
+  schemaId: string,
 ): MockRecord[] {
   const records = MOCK_DATA[schemaId] || [];
   return records.filter((rec) => evaluateGroup(rootGroup, rec, schemaId));

@@ -7,10 +7,6 @@ export type QueryFormat = "sql" | "mongo" | "graphql";
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-function getFieldLabel(schema: Schema, fieldId: string): string {
-  return schema.fields.find((f) => f.id === fieldId)?.label ?? fieldId;
-}
-
 function formatValue(value: unknown, type?: string): string {
   if (value === null || value === undefined || value === "") return "NULL";
   if (type === "string" || type === "enum") return `'${String(value)}'`;
@@ -70,7 +66,7 @@ function groupToSQL(group: QueryGroup, schema: Schema, depth = 0): string {
   if (group.children.length === 0) return "";
 
   const indent = "  ".repeat(depth);
-  const conjunction = ` ${group.conjunction}\n${indent}`;
+  const logicalOperator = ` ${group.logicalOperator}\n${indent}`;
 
   const parts = group.children.map((child) => {
     if (child.type === "rule") {
@@ -81,7 +77,7 @@ function groupToSQL(group: QueryGroup, schema: Schema, depth = 0): string {
     }
   });
 
-  const joined = parts.join(conjunction);
+  const joined = parts.join(logicalOperator);
 
   if (depth === 0) {
     return `SELECT * FROM ${schema.id}\nWHERE ${joined}`;
@@ -136,10 +132,9 @@ function nodeToMongo(node: QueryNode): Record<string, unknown> {
   const group = node as QueryGroup;
   if (group.children.length === 0) return {};
 
-  const parts = group.children.map(nodeToMongo);
-  const mongoOp = group.conjunction === "AND" ? "$and" : "$or";
+  const parts = group.children.map((child) => nodeToMongo(child));
+  const mongoOp = group.logicalOperator === "AND" ? "$and" : "$or";
 
-  if (parts.length === 1) return parts[0];
   return { [mongoOp]: parts };
 }
 
@@ -148,7 +143,9 @@ function mongoToString(obj: unknown, indent = 0): string {
   const inner = "  ".repeat(indent + 1);
 
   if (Array.isArray(obj)) {
-    const items = obj.map((v) => `${inner}${mongoToString(v, indent + 1)}`).join(",\n");
+    const items = obj
+      .map((v) => `${inner}${mongoToString(v, indent + 1)}`)
+      .join(",\n");
     return `[\n${items}\n${pad}]`;
   }
   if (obj !== null && typeof obj === "object") {
@@ -232,7 +229,7 @@ function nodeToGraphQL(node: QueryNode, indentLevel: number): string {
     .map((child) => nodeToGraphQL(child, childIndent))
     .join("\n");
 
-  return `${indent}{\n${indent}  ${group.conjunction}: [\n${parts}\n${indent}  ]\n${indent}}`;
+  return `${indent}{\n${indent}  ${group.logicalOperator}: [\n${parts}\n${indent}  ]\n${indent}}`;
 }
 
 function groupToGraphQL(group: QueryGroup, schema: Schema): string {
@@ -244,7 +241,7 @@ function groupToGraphQL(group: QueryGroup, schema: Schema): string {
     .map((child) => nodeToGraphQL(child, 8))
     .join("\n");
 
-  return `query {\n  ${schema.id}(\n    filter: {\n      ${group.conjunction}: [\n${parts}\n      ]\n    }\n  ) {\n    id\n  }\n}`;
+  return `query {\n  ${schema.id}(\n    filter: {\n      ${group.logicalOperator}: [\n${parts}\n      ]\n    }\n  ) {\n    id\n  }\n}`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -254,7 +251,7 @@ function groupToGraphQL(group: QueryGroup, schema: Schema): string {
 export function generateQuery(
   rootGroup: QueryGroup,
   schema: Schema,
-  format: QueryFormat
+  format: QueryFormat,
 ): string {
   if (rootGroup.children.length === 0) {
     if (format === "sql") {

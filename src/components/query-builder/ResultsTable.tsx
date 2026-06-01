@@ -5,6 +5,7 @@ import { Play, ChevronLeft, ChevronRight, SearchX, ChevronsUpDown, ArrowUp, Arro
 import { QueryGroup } from "@/lib/types";
 import { getSchemaById } from "@/lib/schemas";
 import { runQuerySimulator } from "@/lib/simulator";
+import { MockRecord } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -24,7 +25,7 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
   const [loading, setLoading] = useState(false);
   
   // Initialize results state with current simulated query to avoid mount/reload flashes
-  const [results, setResults] = useState<any[]>(() => {
+  const [results, setResults] = useState<MockRecord[]>(() => {
     return runQuerySimulator(rootGroup, schemaId);
   });
   
@@ -35,9 +36,11 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
   // Automatically evaluate query ONLY when schema changes
   useEffect(() => {
     const matched = runQuerySimulator(rootGroup, schemaId);
-    setResults(matched);
-    setCurrentPage(1);
-    setSortConfig({ key: "", direction: null });
+    Promise.resolve().then(() => {
+      setResults(matched);
+      setCurrentPage(1);
+      setSortConfig({ key: "", direction: null });
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [schemaId]);
 
@@ -52,6 +55,17 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
       setLoading(false);
     }, 450);
   };
+
+  useEffect(() => {
+    const handleRunQueryEvent = () => {
+      handleRunQuery();
+    };
+    window.addEventListener("run-query", handleRunQueryEvent);
+    return () => {
+      window.removeEventListener("run-query", handleRunQueryEvent);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootGroup, schemaId]);
 
   // Handle header click to sort column
   const handleSort = (key: string) => {
@@ -116,7 +130,7 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
   };
 
   // Render record fields dynamically and prettily
-  const renderCell = (fieldId: string, value: any) => {
+  const renderCell = (fieldId: string, value: MockRecord[keyof MockRecord]) => {
     if (value === null || value === undefined) return <span className="text-text-tertiary font-mono">null</span>;
 
     // Formatting rules
@@ -142,7 +156,10 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
     }
 
     if (fieldId === "createdAt" || fieldId === "orderDate") {
-      return <span className="text-text-secondary">{formatDate(value)}</span>;
+      if (typeof value === "number") {
+        return <span className="text-text-secondary">{formatDate(new Date(value))}</span>;
+      }
+      return <span className="text-text-secondary">{formatDate(String(value))}</span>;
     }
 
     // Pretty enums/status tags
@@ -246,7 +263,7 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
                 ) : (
                   paginatedResults.map((record, ri) => (
                     <tr
-                      key={record.id || record.orderId || ri}
+                      key={String(record.id ?? record.orderId ?? ri)}
                       className="border-b border-border-default last:border-0 hover:bg-bg-elevated/30 transition-colors duration-100"
                     >
                       {schema.fields.map((field) => (

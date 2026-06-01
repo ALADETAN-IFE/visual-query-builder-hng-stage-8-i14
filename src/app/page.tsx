@@ -4,12 +4,12 @@ import { useState, useEffect } from "react";
 import {
   Database,
   Sparkles,
-  Play,
   Sun,
   Moon,
   FolderOpen,
   ArrowRight,
   Download,
+  Trash2,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -17,20 +17,45 @@ import SchemaSelector from "@/components/query-builder/SchemaSelector";
 import QueryBuilder from "@/components/query-builder/QueryBuilder";
 import QueryPreview from "@/components/query-builder/QueryPreview";
 import ResultsTable from "@/components/query-builder/ResultsTable";
+import QueryJSONModal from "@/components/query-builder/QueryJSONModal";
 import { useQueryStore } from "@/store/query-store";
-import { downloadFile } from "@/lib/utils";
+import { usePresetsStore } from "@/store/presets-store";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { QueryGroup } from "@/lib/types";
+
+function countRules(group: QueryGroup): number {
+  let count = 0;
+  for (const child of group.children) {
+    if (child.type === "rule") {
+      count++;
+    } else {
+      count += countRules(child);
+    }
+  }
+  return count;
+}
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const presets = usePresetsStore((state) => state.presets);
+  const deletePreset = usePresetsStore((state) => state.deletePreset);
+
   const schemaId = useQueryStore((state) => state.schemaId);
   const setSchemaId = useQueryStore((state) => state.setSchemaId);
-  const runValidation = useQueryStore((state) => state.runValidation);
   const rootGroup = useQueryStore((state) => state.rootGroup);
+  const importQuery = useQueryStore((state) => state.importQuery);
+
+  const [isJSONModalOpen, setIsJSONModalOpen] = useState(false);
+  const [jsonModalTab, setJsonModalTab] = useState<"export" | "import">("export");
+
+  useKeyboardShortcuts();
 
   useEffect(() => {
     // Load persisted theme
-    const savedTheme = localStorage.getItem("querycraft-theme") as "dark" | "light";
+    const savedTheme = localStorage.getItem("querycraft-theme") as
+      | "dark"
+      | "light";
     if (savedTheme) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme(savedTheme);
@@ -47,11 +72,6 @@ export default function Home() {
     setTheme(nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
     localStorage.setItem("querycraft-theme", nextTheme);
-  };
-
-  const handleExport = () => {
-    const payload = JSON.stringify({ schemaId, query: rootGroup }, null, 2);
-    downloadFile(payload, `querycraft-${schemaId}-${Date.now()}.json`);
   };
 
   return (
@@ -100,7 +120,7 @@ export default function Home() {
         {!mounted ? (
           <div className="flex flex-col gap-6 w-full">
             {/* Schema Selector Skeleton */}
-            <div className="w-full rounded-xl border border-border-default bg-bg-surface p-4 shadow-sm h-[74px] flex items-center justify-between gap-4 max-[750px]:flex-col max-[750px]:items-start max-[750px]:h-auto">
+            <div className="w-full rounded-xl border border-border-default bg-bg-surface p-4 shadow-sm h-18.5 flex items-center justify-between gap-4 max-[750px]:flex-col max-[750px]:items-start max-[750px]:h-auto">
               <div className="flex items-center min-w-0 gap-4 flex-1 w-full">
                 <div className="h-8 w-24 skeleton" />
                 <div className="h-8 w-64 skeleton" />
@@ -111,7 +131,7 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
               <div className="lg:col-span-2 flex flex-col gap-4">
                 {/* Query Builder Skeleton */}
-                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[250px] flex flex-col gap-4">
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-62.5 flex flex-col gap-4">
                   <div className="flex items-center justify-between border-b border-border-default pb-3">
                     <div className="h-7 w-32 skeleton" />
                     <div className="h-7 w-20 skeleton" />
@@ -120,7 +140,7 @@ export default function Home() {
                 </div>
 
                 {/* Results Table Skeleton */}
-                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[320px] flex flex-col gap-4">
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-80 flex flex-col gap-4">
                   <div className="flex items-center justify-between border-b border-border-default pb-3">
                     <div className="h-6 w-40 skeleton" />
                     <div className="h-8 w-24 skeleton" />
@@ -131,13 +151,13 @@ export default function Home() {
 
               <div className="flex flex-col gap-6">
                 {/* Query Preview Skeleton */}
-                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[280px] flex flex-col gap-4">
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-70 flex flex-col gap-4">
                   <div className="h-6 w-32 skeleton" />
                   <div className="h-44 w-full skeleton" />
                 </div>
 
                 {/* Presets Skeleton */}
-                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[180px] flex flex-col gap-4">
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-45 flex flex-col gap-4">
                   <div className="h-6 w-32 skeleton" />
                   <div className="h-24 w-full skeleton" />
                 </div>
@@ -171,7 +191,10 @@ export default function Home() {
                         variant="ghost"
                         size="sm"
                         icon={<Download className="w-3.5 h-3.5" />}
-                        onClick={handleExport}
+                        onClick={() => {
+                          setJsonModalTab("export");
+                          setIsJSONModalOpen(true);
+                        }}
                       >
                         Export
                       </Button>
@@ -179,34 +202,53 @@ export default function Home() {
                         variant="secondary"
                         size="sm"
                         icon={<FolderOpen className="w-3.5 h-3.5" />}
+                        onClick={() => {
+                          setJsonModalTab("import");
+                          setIsJSONModalOpen(true);
+                        }}
                       >
                         Load Preset
                       </Button>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2.5">
-                    <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
-                      <div>
-                        <span className="text-xs font-semibold block text-text-primary">
-                          Adult Active Users
-                        </span>
-                        <span className="text-[0.625rem] text-text-tertiary">
-                          users schema • 2 rules
-                        </span>
+                    {presets.length === 0 ? (
+                      <div className="text-center py-6 px-4 border border-dashed border-border-default rounded-lg bg-bg-inset/30">
+                        <p className="text-xs text-text-tertiary">No saved presets yet.</p>
                       </div>
-                      <Badge variant="sql">SQL</Badge>
-                    </div>
-                    <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
-                      <div>
-                        <span className="text-xs font-semibold block text-text-primary">
-                          Premium Customers
-                        </span>
-                        <span className="text-[0.625rem] text-text-tertiary">
-                          orders schema • 3 rules
-                        </span>
-                      </div>
-                      <Badge variant="mongo">MONGO</Badge>
-                    </div>
+                    ) : (
+                      presets.map((preset) => (
+                        <div
+                          key={preset.id}
+                          className="group/item flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer"
+                          onClick={() => importQuery(preset.schemaId, preset.query)}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs font-semibold block text-text-primary truncate">
+                              {preset.title}
+                            </span>
+                            <span className="text-[0.625rem] text-text-tertiary">
+                              {preset.schemaId} schema • {countRules(preset.query)} rule{countRules(preset.query) === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={preset.schemaId === "users" ? "sql" : preset.schemaId === "orders" ? "mongo" : "graphql"}>
+                              {preset.schemaId.toUpperCase()}
+                            </Badge>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deletePreset(preset.id);
+                              }}
+                              className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-accent-danger/10 text-text-tertiary hover:text-accent-danger transition-all cursor-pointer"
+                              aria-label={`Delete preset ${preset.title}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -231,6 +273,15 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <QueryJSONModal
+        isOpen={isJSONModalOpen}
+        onClose={() => setIsJSONModalOpen(false)}
+        currentQuery={rootGroup}
+        currentSchemaId={schemaId}
+        onImport={importQuery}
+        initialTab={jsonModalTab}
+      />
     </div>
   );
 }
