@@ -4,7 +4,6 @@ import { useState, useEffect } from "react";
 import {
   Database,
   Sparkles,
-  Play,
   Sun,
   Moon,
   FolderOpen,
@@ -34,7 +33,9 @@ export default function Home() {
 
   useEffect(() => {
     // Load persisted theme
-    const savedTheme = localStorage.getItem("querycraft-theme") as "dark" | "light";
+    const savedTheme = localStorage.getItem("querycraft-theme") as
+      | "dark"
+      | "light";
     if (savedTheme) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme(savedTheme);
@@ -75,10 +76,14 @@ export default function Home() {
         ) {
           importQuery(data.schemaId, data.query);
         } else {
-          alert("Invalid query file format. The file must contain a valid schemaId and query group.");
+          alert(
+            "Invalid query file format. The file must contain a valid schemaId and query group.",
+          );
         }
       } catch (err) {
-        alert("Failed to parse the query file. Please make sure it's a valid JSON file.");
+        alert(
+          "Failed to parse the query file. Please make sure it's a valid JSON file.",
+        );
       }
     };
     reader.readAsText(file);
@@ -131,7 +136,7 @@ export default function Home() {
         {!mounted ? (
           <div className="flex flex-col gap-6 w-full">
             {/* Schema Selector Skeleton */}
-            <div className="w-full rounded-xl border border-border-default bg-bg-surface p-4 shadow-sm h-[74px] flex items-center justify-between gap-4 max-[750px]:flex-col max-[750px]:items-start max-[750px]:h-auto">
+            <div className="w-full rounded-xl border border-border-default bg-bg-surface p-4 shadow-sm h-18.5 flex items-center justify-between gap-4 max-[750px]:flex-col max-[750px]:items-start max-[750px]:h-auto">
               <div className="flex items-center min-w-0 gap-4 flex-1 w-full">
                 <div className="h-8 w-24 skeleton" />
                 <div className="h-8 w-64 skeleton" />
@@ -142,7 +147,7 @@ export default function Home() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
               <div className="lg:col-span-2 flex flex-col gap-4">
                 {/* Query Builder Skeleton */}
-                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[250px] flex flex-col gap-4">
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-62.5 flex flex-col gap-4">
                   <div className="flex items-center justify-between border-b border-border-default pb-3">
                     <div className="h-7 w-32 skeleton" />
                     <div className="h-7 w-20 skeleton" />
@@ -151,7 +156,7 @@ export default function Home() {
                 </div>
 
                 {/* Results Table Skeleton */}
-                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[320px] flex flex-col gap-4">
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-80 flex flex-col gap-4">
                   <div className="flex items-center justify-between border-b border-border-default pb-3">
                     <div className="h-6 w-40 skeleton" />
                     <div className="h-8 w-24 skeleton" />
@@ -162,13 +167,13 @@ export default function Home() {
 
               <div className="flex flex-col gap-6">
                 {/* Query Preview Skeleton */}
-                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[280px] flex flex-col gap-4">
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-70 flex flex-col gap-4">
                   <div className="h-6 w-32 skeleton" />
                   <div className="h-44 w-full skeleton" />
                 </div>
 
                 {/* Presets Skeleton */}
-                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[180px] flex flex-col gap-4">
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-45 flex flex-col gap-4">
                   <div className="h-6 w-32 skeleton" />
                   <div className="h-24 w-full skeleton" />
                 </div>
@@ -217,7 +222,11 @@ export default function Home() {
                         variant="secondary"
                         size="sm"
                         icon={<FolderOpen className="w-3.5 h-3.5" />}
-                        onClick={() => document.getElementById("querycraft-import-input")?.click()}
+                        onClick={() =>
+                          document
+                            .getElementById("querycraft-import-input")
+                            ?.click()
+                        }
                       >
                         Load Preset
                       </Button>

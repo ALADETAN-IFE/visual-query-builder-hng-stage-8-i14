@@ -15,6 +15,7 @@ import {
   DragEndEvent,
   DragStartEvent,
   DragOverlay,
+  type Modifier,
 } from "@dnd-kit/core";
 import { QueryNode } from "@/lib/types";
 
@@ -29,7 +30,7 @@ function findNode(node: QueryNode, id: string): QueryNode | null {
   return null;
 }
 
-const restrictToBuilderModifier = ({ transform, activeNodeRect }: any) => {
+const restrictToBuilderModifier: Modifier = ({ transform, activeNodeRect }) => {
   if (!activeNodeRect) return transform;
 
   // Target the actual visible card panel, not the outer flex wrapper

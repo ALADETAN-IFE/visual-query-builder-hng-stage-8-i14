@@ -1,4 +1,4 @@
-import { QueryGroup, QueryRule, QueryNode } from "./types";
+import { QueryGroup, QueryRule } from "./types";
 import { MOCK_DATA, MockRecord } from "./mock-data";
 import { getSchemaById } from "./schemas";
 
@@ -35,7 +35,7 @@ function evaluateRule(
   }
 
   // Normalize types for comparison
-  const normalize = (val: any) => {
+  const normalize = (val: unknown) => {
     if (fieldType === "number") {
       const num = Number(val);
       return isNaN(num) ? 0 : num;
@@ -44,7 +44,8 @@ function evaluateRule(
       return val === true || String(val) === "true" || String(val) === "1";
     }
     if (fieldType === "date") {
-      return new Date(val).getTime();
+      // Coerce to string then parse to avoid narrowing issues with unknown
+      return new Date(String(val)).getTime();
     }
     return String(val).toLowerCase(); // Case-insensitive comparison for strings
   };
