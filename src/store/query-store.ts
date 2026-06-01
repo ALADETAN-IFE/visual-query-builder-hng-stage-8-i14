@@ -38,7 +38,7 @@ function createEmptyGroup(): QueryGroup {
 
 function createInitialRoot(schemaId: string): QueryGroup {
   const root = createEmptyGroup();
-  root.children = [createEmptyRule(schemaId), createEmptyRule(schemaId)];
+  root.children = [];
   return root;
 }
 
@@ -113,13 +113,25 @@ interface QueryStore {
   resetQuery: () => void;
 }
 
-export const useQueryStore = create<QueryStore>((set, get) => ({
-  schemaId: "users",
-  rootGroup: createInitialRoot("users"),
-  validationErrors: [],
-  validationTriggered: false,
+const getInitialSchemaId = (): string => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("querycraft-schema") || "users";
+  }
+  return "users";
+};
+
+export const useQueryStore = create<QueryStore>((set, get) => {
+  const initialSchema = getInitialSchemaId();
+  return {
+    schemaId: initialSchema,
+    rootGroup: createInitialRoot(initialSchema),
+    validationErrors: [],
+    validationTriggered: false,
 
   setSchemaId: (id) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("querycraft-schema", id);
+    }
     set({
       schemaId: id,
       rootGroup: createInitialRoot(id),
@@ -216,7 +228,8 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
       validationTriggered: false,
     });
   },
-}));
+};
+});
 
 export function getErrorsForNode(
   errors: ValidationError[],
