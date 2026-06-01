@@ -1,12 +1,26 @@
 "use client";
 
-import { AlertCircle, RotateCcw, Save } from "lucide-react";
+import { useState } from "react";
+import { AlertCircle, RotateCcw, Save, GripVertical } from "lucide-react";
 import { getSchemaById } from "@/lib/schemas";
 import { useQueryStore } from "@/store/query-store";
 import { hasValidationErrors } from "@/lib/validation";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import QueryGroup from "./QueryGroup";
+import { DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay } from "@dnd-kit/core";
+import { QueryNode } from "@/lib/types";
+
+function findNode(node: QueryNode, id: string): QueryNode | null {
+  if (node.id === id) return node;
+  if (node.type === "group") {
+    for (const child of node.children) {
+      const res = findNode(child, id);
+      if (res) return res;
+    }
+  }
+  return null;
+}
 
 export default function QueryBuilder() {
   const schemaId = useQueryStore((state) => state.schemaId);
@@ -16,8 +30,32 @@ export default function QueryBuilder() {
     (state) => state.validationTriggered,
   );
   const resetQuery = useQueryStore((state) => state.resetQuery);
+  const moveNode = useQueryStore((state) => state.moveNode);
+
+  const [activeNode, setActiveNode] = useState<QueryNode | null>(null);
 
   const schema = getSchemaById(schemaId);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const node = findNode(rootGroup, String(event.active.id));
+    if (node) {
+      setActiveNode(node);
+    }
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    setActiveNode(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    if (active.id !== over.id) {
+      moveNode(String(active.id), String(over.id));
+    }
+  };
+
+  const handleDragCancel = () => {
+    setActiveNode(null);
+  };
 
   if (!schema) {
     return (
@@ -76,7 +114,42 @@ export default function QueryBuilder() {
         </div>
       )}
 
-      <QueryGroup group={rootGroup} schema={schema} isRoot depth={0} />
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <QueryGroup group={rootGroup} schema={schema} isRoot depth={0} />
+        <DragOverlay dropAnimation={null}>
+          {activeNode ? (
+            activeNode.type === "rule" ? (
+              <div className="shadow-2xl border border-accent-primary bg-bg-surface opacity-95 p-3 rounded-lg w-full max-w-4xl select-none pointer-events-none flex items-center gap-3 border-l-4" style={{ borderLeftColor: "var(--accent-primary)" }}>
+                <GripVertical className="w-3.5 h-3.5 text-text-tertiary shrink-0" />
+                <span className="text-xs font-semibold text-text-primary">
+                  {schema.fields.find((f) => f.id === activeNode.field)?.label ?? activeNode.field}
+                </span>
+                <span className="text-xs text-text-secondary uppercase font-mono">{activeNode.operator}</span>
+                {activeNode.value !== null && activeNode.value !== "" && (
+                  <span className="text-xs text-text-tertiary italic">
+                    &quot;{String(activeNode.value)}&quot;
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="shadow-2xl border border-accent-primary bg-bg-surface opacity-95 p-5 rounded-lg w-full max-w-4xl select-none pointer-events-none flex items-center gap-3 border-l-4" style={{ borderLeftColor: "var(--accent-secondary)" }}>
+                <GripVertical className="w-3.5 h-3.5 text-text-tertiary shrink-0" />
+                <span className="text-xs font-bold uppercase tracking-wider text-text-primary">
+                  {activeNode.conjunction} GROUP
+                </span>
+                <Badge variant={activeNode.conjunction === "AND" ? "and" : "or"}>
+                  {activeNode.children.length} item{activeNode.children.length === 1 ? "" : "s"}
+                </Badge>
+              </div>
+            )
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

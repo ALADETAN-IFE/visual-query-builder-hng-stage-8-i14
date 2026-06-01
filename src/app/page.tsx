@@ -19,6 +19,7 @@ import QueryPreview from "@/components/query-builder/QueryPreview";
 import ResultsTable from "@/components/query-builder/ResultsTable";
 import { useQueryStore } from "@/store/query-store";
 import { downloadFile } from "@/lib/utils";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
@@ -27,6 +28,9 @@ export default function Home() {
   const setSchemaId = useQueryStore((state) => state.setSchemaId);
   const runValidation = useQueryStore((state) => state.runValidation);
   const rootGroup = useQueryStore((state) => state.rootGroup);
+  const importQuery = useQueryStore((state) => state.importQuery);
+
+  useKeyboardShortcuts();
 
   useEffect(() => {
     // Load persisted theme
@@ -52,6 +56,33 @@ export default function Home() {
   const handleExport = () => {
     const payload = JSON.stringify({ schemaId, query: rootGroup }, null, 2);
     downloadFile(payload, `querycraft-${schemaId}-${Date.now()}.json`);
+  };
+
+  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (
+          data &&
+          typeof data === "object" &&
+          data.schemaId &&
+          data.query &&
+          data.query.type === "group"
+        ) {
+          importQuery(data.schemaId, data.query);
+        } else {
+          alert("Invalid query file format. The file must contain a valid schemaId and query group.");
+        }
+      } catch (err) {
+        alert("Failed to parse the query file. Please make sure it's a valid JSON file.");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = "";
   };
 
   return (
@@ -175,10 +206,18 @@ export default function Home() {
                       >
                         Export
                       </Button>
+                      <input
+                        type="file"
+                        id="querycraft-import-input"
+                        accept=".json"
+                        className="hidden"
+                        onChange={handleImport}
+                      />
                       <Button
                         variant="secondary"
                         size="sm"
                         icon={<FolderOpen className="w-3.5 h-3.5" />}
+                        onClick={() => document.getElementById("querycraft-import-input")?.click()}
                       >
                         Load Preset
                       </Button>

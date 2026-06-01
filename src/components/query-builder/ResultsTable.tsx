@@ -53,6 +53,17 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
     }, 450);
   };
 
+  useEffect(() => {
+    const handleRunQueryEvent = () => {
+      handleRunQuery();
+    };
+    window.addEventListener("run-query", handleRunQueryEvent);
+    return () => {
+      window.removeEventListener("run-query", handleRunQueryEvent);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rootGroup, schemaId]);
+
   // Handle header click to sort column
   const handleSort = (key: string) => {
     let direction: "asc" | "desc" | null = "asc";

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Trash2 } from "lucide-react";
+import { Trash2, GripVertical } from "lucide-react";
 import { QueryRule as QueryRuleType, Schema, SchemaField } from "@/lib/types";
 import { getOperatorsForType } from "@/lib/operators";
 import { getNodeError } from "@/store/query-store";
@@ -10,6 +10,8 @@ import { cn } from "@/lib/utils";
 import Button from "@/components/ui/Button";
 import Select from "@/components/ui/Select";
 import Input from "@/components/ui/Input";
+import { useSortable } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface QueryRuleProps {
   rule: QueryRuleType;
@@ -30,6 +32,23 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
   const validationTriggered = useQueryStore((state) => state.validationTriggered);
   const updateRule = useQueryStore((state) => state.updateRule);
   const removeNode = useQueryStore((state) => state.removeNode);
+
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: rule.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    position: "relative" as const,
+    zIndex: isDragging ? 50 : "auto",
+  };
 
   const field = schema.fields.find((item) => item.id === rule.field) ?? schema.fields[0];
   const operators = getOperatorsForType(field.type);
@@ -179,13 +198,25 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
 
   return (
     <div
+      ref={setNodeRef}
+      style={style}
       className={cn(
         "flex flex-wrap items-center gap-3 bg-bg-elevated p-3 rounded-lg border transition-all duration-150 animate-fade-in",
         valueError || fieldError || operatorError
           ? "border-accent-danger/40"
-          : "border-border-default"
+          : "border-border-default",
+        isDragging && "shadow-lg scale-[1.01]"
       )}
     >
+      <div
+        className="cursor-grab text-text-tertiary hover:text-text-primary mr-1 shrink-0 flex items-center justify-center p-1 rounded hover:bg-bg-inset transition-colors"
+        {...attributes}
+        {...listeners}
+        aria-label="Drag rule handle"
+      >
+        <GripVertical className="w-3.5 h-3.5" />
+      </div>
+
       <Select
         className="w-40 bg-bg-surface"
         size="sm"
