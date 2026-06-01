@@ -165,64 +165,86 @@ function mongoToString(obj: unknown, indent = 0): string {
 // GraphQL Generator
 // ─────────────────────────────────────────────────────────────────────────────
 
-function ruleToGraphQL(rule: QueryRule, schema: Schema, indent = ""): string {
+function ruleToGraphQL(rule: QueryRule): string {
   const { field, operator, value } = rule;
-  const label = getFieldLabel(schema, field);
+  let opStr = "";
 
   switch (operator) {
     case "equals":
-      return `${indent}${field}: { eq: ${JSON.stringify(value)} }  # ${label} equals`;
+      opStr = `eq: ${JSON.stringify(value)}`;
+      break;
     case "not_equals":
-      return `${indent}${field}: { neq: ${JSON.stringify(value)} }  # ${label} not equals`;
+      opStr = `neq: ${JSON.stringify(value)}`;
+      break;
     case "contains":
-      return `${indent}${field}: { contains: ${JSON.stringify(value)} }`;
+      opStr = `contains: ${JSON.stringify(value)}`;
+      break;
     case "starts_with":
-      return `${indent}${field}: { startsWith: ${JSON.stringify(value)} }`;
+      opStr = `startsWith: ${JSON.stringify(value)}`;
+      break;
     case "ends_with":
-      return `${indent}${field}: { endsWith: ${JSON.stringify(value)} }`;
+      opStr = `endsWith: ${JSON.stringify(value)}`;
+      break;
     case "greater_than":
-      return `${indent}${field}: { gt: ${value} }`;
+      opStr = `gt: ${value}`;
+      break;
     case "less_than":
-      return `${indent}${field}: { lt: ${value} }`;
+      opStr = `lt: ${value}`;
+      break;
     case "between": {
       const [from, to] = Array.isArray(value) ? value : [value, value];
-      return `${indent}${field}: { gte: ${from}, lte: ${to} }`;
+      opStr = `gte: ${from}, lte: ${to}`;
+      break;
     }
     case "in_array": {
       const arr = Array.isArray(value) ? value : [value];
-      return `${indent}${field}: { in: [${arr.map((v) => JSON.stringify(v)).join(", ")}] }`;
+      opStr = `in: [${arr.map((v) => JSON.stringify(v)).join(", ")}]`;
+      break;
     }
     case "is_null":
-      return `${indent}${field}: { isNull: true }`;
+      opStr = `isNull: true`;
+      break;
     case "is_not_null":
-      return `${indent}${field}: { isNull: false }`;
+      opStr = `isNull: false`;
+      break;
     case "regex":
-      return `${indent}${field}: { regex: ${JSON.stringify(value)} }`;
+      opStr = `regex: ${JSON.stringify(value)}`;
+      break;
     default:
-      return `${indent}${field}: { ${operator}: ${JSON.stringify(value)} }`;
+      opStr = `${operator}: ${JSON.stringify(value)}`;
   }
+  return `{ ${field}: { ${opStr} } }`;
 }
 
-function groupToGraphQL(group: QueryGroup, schema: Schema, depth = 0): string {
-  if (group.children.length === 0) return "";
-
-  const parts = group.children.map((child) => {
-    if (child.type === "rule") {
-      const ruleIndent = " ".repeat(6 + depth * 2);
-      return ruleToGraphQL(child, schema, ruleIndent);
-    } else {
-      const groupIndent = " ".repeat(6 + depth * 2);
-      const childGroup = child as QueryGroup;
-      const subConjunction = childGroup.conjunction.toLowerCase();
-      const inner = groupToGraphQL(childGroup, schema, depth + 1);
-      return `${groupIndent}${subConjunction}: {\n${inner}\n${groupIndent}}`;
-    }
-  });
-
-  if (depth === 0) {
-    return `query {\n  ${schema.id}(\n    filter: {\n${parts.join("\n")}\n    }\n  ) {\n    id\n  }\n}`;
+function nodeToGraphQL(node: QueryNode, indentLevel: number): string {
+  const indent = " ".repeat(indentLevel);
+  if (node.type === "rule") {
+    return `${indent}${ruleToGraphQL(node)}`;
   }
-  return parts.join("\n");
+
+  const group = node as QueryGroup;
+  if (group.children.length === 0) {
+    return `${indent}{}`;
+  }
+
+  const childIndent = indentLevel + 2;
+  const parts = group.children
+    .map((child) => nodeToGraphQL(child, childIndent))
+    .join("\n");
+
+  return `${indent}{\n${indent}  ${group.conjunction}: [\n${parts}\n${indent}  ]\n${indent}}`;
+}
+
+function groupToGraphQL(group: QueryGroup, schema: Schema): string {
+  if (group.children.length === 0) {
+    return `query {\n  ${schema.id} {\n    id\n  }\n}`;
+  }
+
+  const parts = group.children
+    .map((child) => nodeToGraphQL(child, 8))
+    .join("\n");
+
+  return `query {\n  ${schema.id}(\n    filter: {\n      ${group.conjunction}: [\n${parts}\n      ]\n    }\n  ) {\n    id\n  }\n}`;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

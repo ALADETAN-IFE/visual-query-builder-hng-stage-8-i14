@@ -157,7 +157,7 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
       if (valStr === "cancelled") {
         return <Badge variant="danger" className="capitalize">{valStr}</Badge>;
       }
-      return <Badge variant="neutral" className="capitalize">{valStr}</Badge>;
+      return <Badge variant="default" className="capitalize">{valStr}</Badge>;
     }
 
     if (fieldId === "id" || fieldId === "orderId") {
@@ -178,7 +178,7 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
             Execution Results
           </h3>
           <Badge
-            variant={results.length > 0 ? "success" : "neutral"}
+            variant={results.length > 0 ? "success" : "default"}
             className="px-2.5 py-0.5 text-[0.7rem] font-bold"
           >
             {results.length} MATCH{results.length === 1 ? "" : "ES"}
@@ -238,7 +238,7 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
                           No matching records found
                         </h4>
                         <p className="text-[0.6875rem] text-text-tertiary max-w-xs mx-auto leading-relaxed">
-                          Your query filter set did not match any documents in the <strong>{schema.name ?? schemaId}</strong> dataset. Check your rule values or operators.
+                          Your query filter set did not match any documents in the <strong>{schema.label ?? schemaId}</strong> dataset. Check your rule values or operators.
                         </p>
                       </div>
                     </td>

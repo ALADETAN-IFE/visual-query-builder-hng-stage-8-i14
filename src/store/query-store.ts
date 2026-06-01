@@ -113,11 +113,20 @@ interface QueryStore {
   resetQuery: () => void;
 }
 
-export const useQueryStore = create<QueryStore>((set, get) => ({
-  schemaId: "users",
-  rootGroup: createInitialRoot("users"),
-  validationErrors: [],
-  validationTriggered: false,
+const getInitialSchemaId = (): string => {
+  if (typeof window !== "undefined") {
+    return localStorage.getItem("querycraft-schema") || "users";
+  }
+  return "users";
+};
+
+export const useQueryStore = create<QueryStore>((set, get) => {
+  const initialSchema = getInitialSchemaId();
+  return {
+    schemaId: initialSchema,
+    rootGroup: createInitialRoot(initialSchema),
+    validationErrors: [],
+    validationTriggered: false,
 
   setSchemaId: (id) => {
     if (typeof window !== "undefined") {
@@ -219,7 +228,8 @@ export const useQueryStore = create<QueryStore>((set, get) => ({
       validationTriggered: false,
     });
   },
-}));
+};
+});
 
 export function getErrorsForNode(
   errors: ValidationError[],

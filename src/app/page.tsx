@@ -21,6 +21,7 @@ import { useQueryStore } from "@/store/query-store";
 import { downloadFile } from "@/lib/utils";
 
 export default function Home() {
+  const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const schemaId = useQueryStore((state) => state.schemaId);
   const setSchemaId = useQueryStore((state) => state.setSchemaId);
@@ -31,17 +32,14 @@ export default function Home() {
     // Load persisted theme
     const savedTheme = localStorage.getItem("querycraft-theme") as "dark" | "light";
     if (savedTheme) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTheme(savedTheme);
       document.documentElement.setAttribute("data-theme", savedTheme);
     } else {
       document.documentElement.setAttribute("data-theme", "dark");
     }
 
-    // Load persisted schema
-    const savedSchema = localStorage.getItem("querycraft-schema");
-    if (savedSchema && savedSchema !== schemaId) {
-      setSchemaId(savedSchema);
-    }
+    setMounted(true);
   }, []);
 
   const toggleTheme = () => {
@@ -99,71 +97,122 @@ export default function Home() {
       </header>
 
       <main className="flex-1 p-6 flex flex-col gap-6 max-w-7xl mx-auto w-full">
-        <SchemaSelector
-          selectedSchemaId={schemaId}
-          onSchemaChange={setSchemaId}
-        />
+        {!mounted ? (
+          <div className="flex flex-col gap-6 w-full">
+            {/* Schema Selector Skeleton */}
+            <div className="w-full rounded-xl border border-border-default bg-bg-surface p-4 shadow-sm h-[74px] flex items-center justify-between gap-4 max-[750px]:flex-col max-[750px]:items-start max-[750px]:h-auto">
+              <div className="flex items-center min-w-0 gap-4 flex-1 w-full">
+                <div className="h-8 w-24 skeleton" />
+                <div className="h-8 w-64 skeleton" />
+              </div>
+              <div className="h-10 w-96 skeleton hidden md:block" />
+            </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          <div className="lg:col-span-2 flex flex-col gap-4">
-            <QueryBuilder />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <div className="lg:col-span-2 flex flex-col gap-4">
+                {/* Query Builder Skeleton */}
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[250px] flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-border-default pb-3">
+                    <div className="h-7 w-32 skeleton" />
+                    <div className="h-7 w-20 skeleton" />
+                  </div>
+                  <div className="h-24 w-full skeleton" />
+                </div>
 
-            <ResultsTable schemaId={schemaId} rootGroup={rootGroup} />
-          </div>
-
-          <div className="flex flex-col gap-6">
-            <QueryPreview />
-
-            <div className="panel p-5">
-              <div className="mb-4 flex items-center justify-between gap-3 border-b border-border-default pb-3">
-                <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
-                  Saved Presets
-                </h3>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    icon={<Download className="w-3.5 h-3.5" />}
-                    onClick={handleExport}
-                  >
-                    Export
-                  </Button>
-                  <Button
-                    variant="secondary"
-                    size="sm"
-                    icon={<FolderOpen className="w-3.5 h-3.5" />}
-                  >
-                    Load Preset
-                  </Button>
+                {/* Results Table Skeleton */}
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[320px] flex flex-col gap-4">
+                  <div className="flex items-center justify-between border-b border-border-default pb-3">
+                    <div className="h-6 w-40 skeleton" />
+                    <div className="h-8 w-24 skeleton" />
+                  </div>
+                  <div className="h-48 w-full skeleton" />
                 </div>
               </div>
-              <div className="flex flex-col gap-2.5">
-                <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
-                  <div>
-                    <span className="text-xs font-semibold block text-text-primary">
-                      Adult Active Users
-                    </span>
-                    <span className="text-[0.625rem] text-text-tertiary">
-                      users schema • 2 rules
-                    </span>
-                  </div>
-                  <Badge variant="sql">SQL</Badge>
+
+              <div className="flex flex-col gap-6">
+                {/* Query Preview Skeleton */}
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[280px] flex flex-col gap-4">
+                  <div className="h-6 w-32 skeleton" />
+                  <div className="h-44 w-full skeleton" />
                 </div>
-                <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
-                  <div>
-                    <span className="text-xs font-semibold block text-text-primary">
-                      Premium Customers
-                    </span>
-                    <span className="text-[0.625rem] text-text-tertiary">
-                      orders schema • 3 rules
-                    </span>
-                  </div>
-                  <Badge variant="mongo">MONGO</Badge>
+
+                {/* Presets Skeleton */}
+                <div className="w-full rounded-xl border border-border-default bg-bg-surface p-5 shadow-sm h-[180px] flex flex-col gap-4">
+                  <div className="h-6 w-32 skeleton" />
+                  <div className="h-24 w-full skeleton" />
                 </div>
               </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <>
+            <SchemaSelector
+              selectedSchemaId={schemaId}
+              onSchemaChange={setSchemaId}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+              <div className="lg:col-span-2 flex flex-col gap-4">
+                <QueryBuilder />
+
+                <ResultsTable schemaId={schemaId} rootGroup={rootGroup} />
+              </div>
+
+              <div className="flex flex-col gap-6">
+                <QueryPreview />
+
+                <div className="panel p-5">
+                  <div className="mb-4 flex items-center justify-between gap-3 border-b border-border-default pb-3">
+                    <h3 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
+                      Saved Presets
+                    </h3>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        icon={<Download className="w-3.5 h-3.5" />}
+                        onClick={handleExport}
+                      >
+                        Export
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        icon={<FolderOpen className="w-3.5 h-3.5" />}
+                      >
+                        Load Preset
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
+                      <div>
+                        <span className="text-xs font-semibold block text-text-primary">
+                          Adult Active Users
+                        </span>
+                        <span className="text-[0.625rem] text-text-tertiary">
+                          users schema • 2 rules
+                        </span>
+                      </div>
+                      <Badge variant="sql">SQL</Badge>
+                    </div>
+                    <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
+                      <div>
+                        <span className="text-xs font-semibold block text-text-primary">
+                          Premium Customers
+                        </span>
+                        <span className="text-[0.625rem] text-text-tertiary">
+                          orders schema • 3 rules
+                        </span>
+                      </div>
+                      <Badge variant="mongo">MONGO</Badge>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
       </main>
 
       <footer className="border-t border-border-default bg-bg-surface/90 backdrop-blur px-6 py-4 mt-12">
