@@ -50,7 +50,7 @@ export interface QueryRule {
 export interface QueryGroup {
   id: string;
   type: "group";
-  conjunction: LogicalOperator;
+  logicalOperator: LogicalOperator;
   children: (QueryRule | QueryGroup)[];
   collapsed?: boolean;
 }

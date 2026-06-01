@@ -34,7 +34,7 @@ export default function QueryGroup({
   const validationTriggered = useQueryStore(
     (state) => state.validationTriggered,
   );
-  const setConjunction = useQueryStore((state) => state.setConjunction);
+  const setlogicalOperator = useQueryStore((state) => state.setlogicalOperator);
   const toggleCollapsed = useQueryStore((state) => state.toggleCollapsed);
   const addRule = useQueryStore((state) => state.addRule);
   const addGroup = useQueryStore((state) => state.addGroup);
@@ -118,11 +118,11 @@ export default function QueryGroup({
               type="button"
               className={cn(
                 "px-3 py-1 text-xs font-bold rounded-md transition-all duration-150 cursor-pointer",
-                group.conjunction === "AND"
+                group.logicalOperator === "AND"
                   ? "bg-accent-success text-text-inverse shadow-sm"
                   : "text-text-secondary hover:text-text-primary",
               )}
-              onClick={() => setConjunction(group.id, "AND")}
+              onClick={() => setlogicalOperator(group.id, "AND")}
             >
               AND
             </button>
@@ -130,18 +130,18 @@ export default function QueryGroup({
               type="button"
               className={cn(
                 "px-3 py-1 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer",
-                group.conjunction === "OR"
+                group.logicalOperator === "OR"
                   ? "bg-accent-warning text-text-inverse shadow-sm"
                   : "text-text-secondary hover:text-text-primary",
               )}
-              onClick={() => setConjunction(group.id, "OR")}
+              onClick={() => setlogicalOperator(group.id, "OR")}
             >
               OR
             </button>
           </div>
 
-          <Badge variant={group.conjunction === "AND" ? "and" : "or"}>
-            {group.conjunction} GROUP
+          <Badge variant={group.logicalOperator === "AND" ? "and" : "or"}>
+            {group.logicalOperator} GROUP
           </Badge>
 
           {groupError && (

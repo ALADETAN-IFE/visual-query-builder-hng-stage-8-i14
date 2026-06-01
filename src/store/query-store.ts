@@ -30,7 +30,7 @@ function createEmptyGroup(): QueryGroup {
   return {
     id: generateId(),
     type: "group",
-    conjunction: "AND",
+    logicalOperator: "AND",
     children: [],
     collapsed: false,
   };
@@ -93,7 +93,10 @@ function addChildToGroup(
   };
 }
 
-function hasDescendant(node: QueryRule | QueryGroup, targetId: string): boolean {
+function hasDescendant(
+  node: QueryRule | QueryGroup,
+  targetId: string,
+): boolean {
   if (node.id === targetId) return true;
   if (node.type === "group") {
     return node.children.some((child) => hasDescendant(child, targetId));
@@ -188,7 +191,10 @@ interface QueryStore {
     ruleId: string,
     updates: Partial<Omit<QueryRule, "id" | "type">>,
   ) => void;
-  setConjunction: (groupId: string, conjunction: LogicalOperator) => void;
+  setlogicalOperator: (
+    groupId: string,
+    logicalOperator: LogicalOperator,
+  ) => void;
   toggleCollapsed: (groupId: string) => void;
   runValidation: () => void;
   resetQuery: () => void;
@@ -211,142 +217,149 @@ export const useQueryStore = create<QueryStore>((set, get) => {
     validationErrors: [],
     validationTriggered: false,
 
-  setSchemaId: (id) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("querycraft-schema", id);
-    }
-    set({
-      schemaId: id,
-      rootGroup: createInitialRoot(id),
-      validationErrors: [],
-      validationTriggered: false,
-    });
-  },
+    setSchemaId: (id) => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("querycraft-schema", id);
+      }
+      set({
+        schemaId: id,
+        rootGroup: createInitialRoot(id),
+        validationErrors: [],
+        validationTriggered: false,
+      });
+    },
 
-  addRule: (groupId) => {
-    const { schemaId, rootGroup } = get();
-    set({
-      rootGroup: addChildToGroup(rootGroup, groupId, createEmptyRule(schemaId)),
-    });
-    if (get().validationTriggered) {
-      get().runValidation();
-    }
-  },
+    addRule: (groupId) => {
+      const { schemaId, rootGroup } = get();
+      set({
+        rootGroup: addChildToGroup(
+          rootGroup,
+          groupId,
+          createEmptyRule(schemaId),
+        ),
+      });
+      if (get().validationTriggered) {
+        get().runValidation();
+      }
+    },
 
-  addGroup: (groupId) => {
-    const { schemaId, rootGroup } = get();
-    const newGroup = createEmptyGroup();
-    newGroup.children = [createEmptyRule(schemaId)];
-    set({
-      rootGroup: addChildToGroup(rootGroup, groupId, newGroup),
-    });
-    if (get().validationTriggered) {
-      get().runValidation();
-    }
-  },
+    addGroup: (groupId) => {
+      const { schemaId, rootGroup } = get();
+      const newGroup = createEmptyGroup();
+      newGroup.children = [createEmptyRule(schemaId)];
+      set({
+        rootGroup: addChildToGroup(rootGroup, groupId, newGroup),
+      });
+      if (get().validationTriggered) {
+        get().runValidation();
+      }
+    },
 
-  removeNode: (nodeId) => {
-    const { rootGroup } = get();
-    if (rootGroup.id === nodeId) return;
+    removeNode: (nodeId) => {
+      const { rootGroup } = get();
+      if (rootGroup.id === nodeId) return;
 
-    set({
-      rootGroup: removeNodeFromTree(rootGroup, nodeId),
-    });
-    if (get().validationTriggered) {
-      get().runValidation();
-    }
-  },
+      set({
+        rootGroup: removeNodeFromTree(rootGroup, nodeId),
+      });
+      if (get().validationTriggered) {
+        get().runValidation();
+      }
+    },
 
-  updateRule: (ruleId, updates) => {
-    const { rootGroup } = get();
-    set({
-      rootGroup: updateNodeInTree(rootGroup, ruleId, (node) => {
-        if (node.type !== "rule") return node;
-        return { ...node, ...updates };
-      }) as QueryGroup,
-    });
-    if (get().validationTriggered) {
-      get().runValidation();
-    }
-  },
+    updateRule: (ruleId, updates) => {
+      const { rootGroup } = get();
+      set({
+        rootGroup: updateNodeInTree(rootGroup, ruleId, (node) => {
+          if (node.type !== "rule") return node;
+          return { ...node, ...updates };
+        }) as QueryGroup,
+      });
+      if (get().validationTriggered) {
+        get().runValidation();
+      }
+    },
 
-  setConjunction: (groupId, conjunction) => {
-    const { rootGroup } = get();
-    set({
-      rootGroup: updateNodeInTree(rootGroup, groupId, (node) => {
-        if (node.type !== "group") return node;
-        return { ...node, conjunction };
-      }) as QueryGroup,
-    });
-  },
+    setlogicalOperator: (groupId, logicalOperator) => {
+      const { rootGroup } = get();
+      set({
+        rootGroup: updateNodeInTree(rootGroup, groupId, (node) => {
+          if (node.type !== "group") return node;
+          return { ...node, logicalOperator };
+        }) as QueryGroup,
+      });
+    },
 
-  toggleCollapsed: (groupId) => {
-    const { rootGroup } = get();
-    set({
-      rootGroup: updateNodeInTree(rootGroup, groupId, (node) => {
-        if (node.type !== "group") return node;
-        return { ...node, collapsed: !node.collapsed };
-      }) as QueryGroup,
-    });
-  },
+    toggleCollapsed: (groupId) => {
+      const { rootGroup } = get();
+      set({
+        rootGroup: updateNodeInTree(rootGroup, groupId, (node) => {
+          if (node.type !== "group") return node;
+          return { ...node, collapsed: !node.collapsed };
+        }) as QueryGroup,
+      });
+    },
 
-  runValidation: () => {
-    const { schemaId, rootGroup } = get();
-    const schema = getSchemaById(schemaId);
-    if (!schema) {
-      set({ validationErrors: [], validationTriggered: true });
-      return;
-    }
-    set({
-      validationErrors: validateQueryTree(rootGroup, schema),
-      validationTriggered: true,
-    });
-  },
+    runValidation: () => {
+      const { schemaId, rootGroup } = get();
+      const schema = getSchemaById(schemaId);
+      if (!schema) {
+        set({ validationErrors: [], validationTriggered: true });
+        return;
+      }
+      set({
+        validationErrors: validateQueryTree(rootGroup, schema),
+        validationTriggered: true,
+      });
+    },
 
-  resetQuery: () => {
-    const { schemaId } = get();
-    set({
-      rootGroup: createInitialRoot(schemaId),
-      validationErrors: [],
-      validationTriggered: false,
-    });
-  },
+    resetQuery: () => {
+      const { schemaId } = get();
+      set({
+        rootGroup: createInitialRoot(schemaId),
+        validationErrors: [],
+        validationTriggered: false,
+      });
+    },
 
-  moveNode: (activeId: string, overId: string) => {
-    if (activeId === overId) return;
-    const { rootGroup } = get();
+    moveNode: (activeId: string, overId: string) => {
+      if (activeId === overId) return;
+      const { rootGroup } = get();
 
-    if (isAncestor(rootGroup, activeId, overId)) return;
+      if (isAncestor(rootGroup, activeId, overId)) return;
 
-    const rootCopy = JSON.parse(JSON.stringify(rootGroup));
-    const { newGroup: treeWithoutActive, node } = extractNode(rootCopy, activeId);
+      const rootCopy = JSON.parse(JSON.stringify(rootGroup));
+      const { newGroup: treeWithoutActive, node } = extractNode(
+        rootCopy,
+        activeId,
+      );
 
-    if (!node) return;
+      if (!node) return;
 
-    const finalTree = insertNode(treeWithoutActive, overId, node);
+      const finalTree = insertNode(treeWithoutActive, overId, node);
 
-    set({ rootGroup: finalTree });
+      set({ rootGroup: finalTree });
 
-    if (get().validationTriggered) {
-      get().runValidation();
-    }
-  },
+      if (get().validationTriggered) {
+        get().runValidation();
+      }
+    },
 
-  importQuery: (schemaId: string, query: QueryGroup) => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem("querycraft-schema", schemaId);
-    }
-    set({
-      schemaId,
-      rootGroup: query,
-      validationErrors: [],
-      validationTriggered: false,
-    });
-    if (get().validationTriggered) {
-      get().runValidation();
-    }
-  },
-};
+    importQuery: (schemaId: string, query: QueryGroup) => {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("querycraft-schema", schemaId);
+      }
+      set({
+        schemaId,
+        rootGroup: query,
+        validationErrors: [],
+        validationTriggered: false,
+      });
+      if (get().validationTriggered) {
+        get().runValidation();
+      }
+    },
+  };
 });
 
 export function getErrorsForNode(
