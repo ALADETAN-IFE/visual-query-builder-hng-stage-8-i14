@@ -9,6 +9,7 @@ import {
   FolderOpen,
   ArrowRight,
   Download,
+  Trash2,
 } from "lucide-react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -16,17 +17,37 @@ import SchemaSelector from "@/components/query-builder/SchemaSelector";
 import QueryBuilder from "@/components/query-builder/QueryBuilder";
 import QueryPreview from "@/components/query-builder/QueryPreview";
 import ResultsTable from "@/components/query-builder/ResultsTable";
+import QueryJSONModal from "@/components/query-builder/QueryJSONModal";
 import { useQueryStore } from "@/store/query-store";
-import { downloadFile } from "@/lib/utils";
+import { usePresetsStore } from "@/store/presets-store";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { QueryGroup } from "@/lib/types";
+
+function countRules(group: QueryGroup): number {
+  let count = 0;
+  for (const child of group.children) {
+    if (child.type === "rule") {
+      count++;
+    } else {
+      count += countRules(child);
+    }
+  }
+  return count;
+}
 
 export default function Home() {
   const [mounted, setMounted] = useState(false);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const presets = usePresetsStore((state) => state.presets);
+  const deletePreset = usePresetsStore((state) => state.deletePreset);
+
   const schemaId = useQueryStore((state) => state.schemaId);
   const setSchemaId = useQueryStore((state) => state.setSchemaId);
   const rootGroup = useQueryStore((state) => state.rootGroup);
   const importQuery = useQueryStore((state) => state.importQuery);
+
+  const [isJSONModalOpen, setIsJSONModalOpen] = useState(false);
+  const [jsonModalTab, setJsonModalTab] = useState<"export" | "import">("export");
 
   useKeyboardShortcuts();
 
@@ -51,42 +72,6 @@ export default function Home() {
     setTheme(nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
     localStorage.setItem("querycraft-theme", nextTheme);
-  };
-
-  const handleExport = () => {
-    const payload = JSON.stringify({ schemaId, query: rootGroup }, null, 2);
-    downloadFile(payload, `querycraft-${schemaId}-${Date.now()}.json`);
-  };
-
-  const handleImport = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const data = JSON.parse(e.target?.result as string);
-        if (
-          data &&
-          typeof data === "object" &&
-          data.schemaId &&
-          data.query &&
-          data.query.type === "group"
-        ) {
-          importQuery(data.schemaId, data.query);
-        } else {
-          alert(
-            "Invalid query file format. The file must contain a valid schemaId and query group.",
-          );
-        }
-      } catch {
-        alert(
-          "Failed to parse the query file. Please make sure it's a valid JSON file.",
-        );
-      }
-    };
-    reader.readAsText(file);
-    event.target.value = "";
   };
 
   return (
@@ -206,54 +191,64 @@ export default function Home() {
                         variant="ghost"
                         size="sm"
                         icon={<Download className="w-3.5 h-3.5" />}
-                        onClick={handleExport}
+                        onClick={() => {
+                          setJsonModalTab("export");
+                          setIsJSONModalOpen(true);
+                        }}
                       >
                         Export
                       </Button>
-                      <input
-                        type="file"
-                        id="querycraft-import-input"
-                        accept=".json"
-                        className="hidden"
-                        onChange={handleImport}
-                      />
                       <Button
                         variant="secondary"
                         size="sm"
                         icon={<FolderOpen className="w-3.5 h-3.5" />}
-                        onClick={() =>
-                          document
-                            .getElementById("querycraft-import-input")
-                            ?.click()
-                        }
+                        onClick={() => {
+                          setJsonModalTab("import");
+                          setIsJSONModalOpen(true);
+                        }}
                       >
                         Load Preset
                       </Button>
                     </div>
                   </div>
                   <div className="flex flex-col gap-2.5">
-                    <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
-                      <div>
-                        <span className="text-xs font-semibold block text-text-primary">
-                          Adult Active Users
-                        </span>
-                        <span className="text-[0.625rem] text-text-tertiary">
-                          users schema • 2 rules
-                        </span>
+                    {presets.length === 0 ? (
+                      <div className="text-center py-6 px-4 border border-dashed border-border-default rounded-lg bg-bg-inset/30">
+                        <p className="text-xs text-text-tertiary">No saved presets yet.</p>
                       </div>
-                      <Badge variant="sql">SQL</Badge>
-                    </div>
-                    <div className="flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer">
-                      <div>
-                        <span className="text-xs font-semibold block text-text-primary">
-                          Premium Customers
-                        </span>
-                        <span className="text-[0.625rem] text-text-tertiary">
-                          orders schema • 3 rules
-                        </span>
-                      </div>
-                      <Badge variant="mongo">MONGO</Badge>
-                    </div>
+                    ) : (
+                      presets.map((preset) => (
+                        <div
+                          key={preset.id}
+                          className="group/item flex justify-between items-center p-2.5 bg-bg-elevated hover:bg-bg-inset transition-colors rounded-lg border border-border-default cursor-pointer"
+                          onClick={() => importQuery(preset.schemaId, preset.query)}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs font-semibold block text-text-primary truncate">
+                              {preset.title}
+                            </span>
+                            <span className="text-[0.625rem] text-text-tertiary">
+                              {preset.schemaId} schema • {countRules(preset.query)} rule{countRules(preset.query) === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={preset.schemaId === "users" ? "sql" : preset.schemaId === "orders" ? "mongo" : "graphql"}>
+                              {preset.schemaId.toUpperCase()}
+                            </Badge>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                deletePreset(preset.id);
+                              }}
+                              className="opacity-0 group-hover/item:opacity-100 p-1 rounded hover:bg-accent-danger/10 text-text-tertiary hover:text-accent-danger transition-all cursor-pointer"
+                              aria-label={`Delete preset ${preset.title}`}
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>
@@ -278,6 +273,15 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <QueryJSONModal
+        isOpen={isJSONModalOpen}
+        onClose={() => setIsJSONModalOpen(false)}
+        currentQuery={rootGroup}
+        currentSchemaId={schemaId}
+        onImport={importQuery}
+        initialTab={jsonModalTab}
+      />
     </div>
   );
 }

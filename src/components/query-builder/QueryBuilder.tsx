@@ -9,6 +9,7 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import QueryGroup from "./QueryGroup";
 import QueryRule from "./QueryRule";
+import SavePresetModal from "./SavePresetModal";
 import {
   DndContext,
   closestCenter,
@@ -116,6 +117,7 @@ export default function QueryBuilder() {
   const moveNode = useQueryStore((state) => state.moveNode);
 
   const [activeNode, setActiveNode] = useState<QueryNode | null>(null);
+  const [isSaveModalOpen, setIsSaveModalOpen] = useState(false);
 
   const schema = getSchemaById(schemaId);
 
@@ -177,6 +179,7 @@ export default function QueryBuilder() {
             variant="secondary"
             size="sm"
             icon={<Save className="w-3.5 h-3.5" />}
+            onClick={() => setIsSaveModalOpen(true)}
           >
             Save Preset
           </Button>
@@ -231,6 +234,13 @@ export default function QueryBuilder() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      <SavePresetModal
+        isOpen={isSaveModalOpen}
+        onClose={() => setIsSaveModalOpen(false)}
+        schemaId={schemaId}
+        query={rootGroup}
+      />
     </div>
   );
 }
