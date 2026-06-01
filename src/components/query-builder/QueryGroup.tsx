@@ -8,7 +8,11 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import QueryRule from "./QueryRule";
 import AddButton from "./AddButton";
-import { SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 interface QueryGroupProps {
@@ -16,6 +20,7 @@ interface QueryGroupProps {
   schema: Schema;
   depth?: number;
   isRoot?: boolean;
+  isOverlay?: boolean;
 }
 
 export default function QueryGroup({
@@ -23,9 +28,12 @@ export default function QueryGroup({
   schema,
   depth = 0,
   isRoot = false,
+  isOverlay = false,
 }: QueryGroupProps) {
   const validationErrors = useQueryStore((state) => state.validationErrors);
-  const validationTriggered = useQueryStore((state) => state.validationTriggered);
+  const validationTriggered = useQueryStore(
+    (state) => state.validationTriggered,
+  );
   const setConjunction = useQueryStore((state) => state.setConjunction);
   const toggleCollapsed = useQueryStore((state) => state.toggleCollapsed);
   const addRule = useQueryStore((state) => state.addRule);
@@ -39,29 +47,38 @@ export default function QueryGroup({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: group.id, disabled: isRoot });
+  } = useSortable({ id: group.id, disabled: isRoot || isOverlay });
 
   const style = isRoot
     ? undefined
     : {
         transform: CSS.Transform.toString(transform),
-        transition,
-        opacity: isDragging ? 0.5 : 1,
+        transition: isDragging ? "none" : isOverlay ? undefined : transition,
+        opacity: isDragging ? 0 : 1,
         position: "relative" as const,
         zIndex: isDragging ? 50 : "auto",
       };
 
-  const groupError = validationTriggered ? getNodeError(validationErrors, group.id) : undefined;
+  const groupError = validationTriggered
+    ? getNodeError(validationErrors, group.id)
+    : undefined;
   const depthColor = getDepthColor(depth);
 
   return (
     <div
-      ref={!isRoot ? setNodeRef : undefined}
-      style={!isRoot ? { ...style, borderLeftWidth: 4, borderLeftColor: depthColor } : { borderLeftWidth: 4, borderLeftColor: depthColor }}
+      id={isRoot ? "query-builder-panel" : undefined}
+      ref={!isRoot && !isOverlay ? setNodeRef : undefined}
+      style={
+        !isRoot
+          ? { ...style, borderLeftWidth: 4, borderLeftColor: depthColor }
+          : { borderLeftWidth: 4, borderLeftColor: depthColor }
+      }
       className={cn(
         "panel p-5 relative animate-fade-in depth-" + (depth % 6),
         !isRoot && "ml-2",
-        isDragging && "shadow-lg scale-[1.01]"
+        isDragging && "opacity-0 pointer-events-none",
+        isOverlay &&
+          "shadow-2xl border-accent-secondary/60 scale-[1.01] opacity-90 border-l-4",
       )}
     >
       <div className="depth-indicator" style={{ background: depthColor }} />
@@ -70,9 +87,12 @@ export default function QueryGroup({
         <div className="flex flex-wrap items-center gap-2">
           {!isRoot && (
             <div
-              className="cursor-grab text-text-tertiary hover:text-text-primary mr-1 shrink-0 flex items-center justify-center p-1 rounded hover:bg-bg-inset transition-colors"
-              {...attributes}
-              {...listeners}
+              className={cn(
+                "text-text-tertiary hover:text-text-primary mr-1 shrink-0 flex items-center justify-center p-1 rounded hover:bg-bg-inset transition-colors",
+                isOverlay ? "cursor-grabbing" : "cursor-grab",
+              )}
+              {...(!isOverlay ? attributes : {})}
+              {...(!isOverlay ? listeners : {})}
               aria-label="Drag group handle"
             >
               <GripVertical className="w-3.5 h-3.5" />
@@ -100,7 +120,7 @@ export default function QueryGroup({
                 "px-3 py-1 text-xs font-bold rounded-md transition-all duration-150 cursor-pointer",
                 group.conjunction === "AND"
                   ? "bg-accent-success text-text-inverse shadow-sm"
-                  : "text-text-secondary hover:text-text-primary"
+                  : "text-text-secondary hover:text-text-primary",
               )}
               onClick={() => setConjunction(group.id, "AND")}
             >
@@ -112,7 +132,7 @@ export default function QueryGroup({
                 "px-3 py-1 text-xs font-semibold rounded-md transition-all duration-150 cursor-pointer",
                 group.conjunction === "OR"
                   ? "bg-accent-warning text-text-inverse shadow-sm"
-                  : "text-text-secondary hover:text-text-primary"
+                  : "text-text-secondary hover:text-text-primary",
               )}
               onClick={() => setConjunction(group.id, "OR")}
             >
@@ -152,6 +172,27 @@ export default function QueryGroup({
                 </span>
               </div>
             </div>
+          ) : isOverlay ? (
+            <div className="flex flex-col gap-3 pl-4 border-l-2 border-border-default ml-2 group-connector animate-fade-in">
+              {group.children.map((child) =>
+                child.type === "rule" ? (
+                  <QueryRule
+                    key={child.id}
+                    rule={child}
+                    schema={schema}
+                    isOverlay
+                  />
+                ) : (
+                  <QueryGroup
+                    key={child.id}
+                    group={child}
+                    schema={schema}
+                    depth={depth + 1}
+                    isOverlay
+                  />
+                ),
+              )}
+            </div>
           ) : (
             <SortableContext
               items={group.children.map((child) => child.id)}
@@ -160,15 +201,21 @@ export default function QueryGroup({
               <div className="flex flex-col gap-3 pl-4 border-l-2 border-border-default ml-2 group-connector animate-fade-in">
                 {group.children.map((child) =>
                   child.type === "rule" ? (
-                    <QueryRule key={child.id} rule={child} schema={schema} />
+                    <QueryRule
+                      key={child.id}
+                      rule={child}
+                      schema={schema}
+                      isOverlay={isOverlay}
+                    />
                   ) : (
                     <QueryGroup
                       key={child.id}
                       group={child}
                       schema={schema}
                       depth={depth + 1}
+                      isOverlay={isOverlay}
                     />
-                  )
+                  ),
                 )}
               </div>
             </SortableContext>

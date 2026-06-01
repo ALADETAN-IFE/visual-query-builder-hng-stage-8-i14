@@ -1,14 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, RotateCcw, Save, GripVertical } from "lucide-react";
+import { AlertCircle, RotateCcw, Save } from "lucide-react";
 import { getSchemaById } from "@/lib/schemas";
 import { useQueryStore } from "@/store/query-store";
 import { hasValidationErrors } from "@/lib/validation";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import QueryGroup from "./QueryGroup";
-import { DndContext, closestCenter, DragEndEvent, DragStartEvent, DragOverlay } from "@dnd-kit/core";
+import QueryRule from "./QueryRule";
+import {
+  DndContext,
+  closestCenter,
+  DragEndEvent,
+  DragStartEvent,
+  DragOverlay,
+} from "@dnd-kit/core";
 import { QueryNode } from "@/lib/types";
 
 function findNode(node: QueryNode, id: string): QueryNode | null {
@@ -21,6 +28,44 @@ function findNode(node: QueryNode, id: string): QueryNode | null {
   }
   return null;
 }
+
+const restrictToBuilderModifier = ({ transform, activeNodeRect }: any) => {
+  if (!activeNodeRect) return transform;
+
+  // Target the actual visible card panel, not the outer flex wrapper
+  const container = document.getElementById("query-builder-panel");
+  if (!container) return transform;
+
+  const containerRect = container.getBoundingClientRect();
+  const inset = 16; // 16px padding so overlay never pokes past card edges
+
+  const minLeft = containerRect.left + inset;
+  const maxRight = containerRect.right - inset;
+  const minTop = containerRect.top + inset;
+  const maxBottom = containerRect.bottom - inset;
+
+  const left = activeNodeRect.left + transform.x;
+  const right = activeNodeRect.right + transform.x;
+  const top = activeNodeRect.top + transform.y;
+  const bottom = activeNodeRect.bottom + transform.y;
+
+  let newX = transform.x;
+  let newY = transform.y;
+
+  if (left < minLeft) {
+    newX += minLeft - left;
+  } else if (right > maxRight) {
+    newX -= right - maxRight;
+  }
+
+  if (top < minTop) {
+    newY += minTop - top;
+  } else if (bottom > maxBottom) {
+    newY -= bottom - maxBottom;
+  }
+
+  return { ...transform, x: newX, y: newY };
+};
 
 export default function QueryBuilder() {
   const schemaId = useQueryStore((state) => state.schemaId);
@@ -68,7 +113,7 @@ export default function QueryBuilder() {
   const invalid = validationTriggered && hasValidationErrors(validationErrors);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div id="query-builder-container" className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-bold uppercase tracking-wider text-text-secondary">
@@ -85,22 +130,22 @@ export default function QueryBuilder() {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-        <Button
-          variant="secondary"
-          size="sm"
-          icon={<Save className="w-3.5 h-3.5" />}
-        >
-          Save Preset
-        </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={<Save className="w-3.5 h-3.5" />}
+          >
+            Save Preset
+          </Button>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          icon={<RotateCcw className="w-3.5 h-3.5" />}
-          onClick={resetQuery}
-        >
-          Reset
-        </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            icon={<RotateCcw className="w-3.5 h-3.5" />}
+            onClick={resetQuery}
+          >
+            Reset
+          </Button>
         </div>
       </div>
 
@@ -116,6 +161,7 @@ export default function QueryBuilder() {
 
       <DndContext
         collisionDetection={closestCenter}
+        modifiers={[restrictToBuilderModifier]}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
@@ -124,27 +170,17 @@ export default function QueryBuilder() {
         <DragOverlay dropAnimation={null}>
           {activeNode ? (
             activeNode.type === "rule" ? (
-              <div className="shadow-2xl border border-accent-primary bg-bg-surface opacity-95 p-3 rounded-lg w-full max-w-4xl select-none pointer-events-none flex items-center gap-3 border-l-4" style={{ borderLeftColor: "var(--accent-primary)" }}>
-                <GripVertical className="w-3.5 h-3.5 text-text-tertiary shrink-0" />
-                <span className="text-xs font-semibold text-text-primary">
-                  {schema.fields.find((f) => f.id === activeNode.field)?.label ?? activeNode.field}
-                </span>
-                <span className="text-xs text-text-secondary uppercase font-mono">{activeNode.operator}</span>
-                {activeNode.value !== null && activeNode.value !== "" && (
-                  <span className="text-xs text-text-tertiary italic">
-                    &quot;{String(activeNode.value)}&quot;
-                  </span>
-                )}
+              <div className="shadow-2xl select-none pointer-events-none w-full max-w-4xl opacity-95">
+                <QueryRule rule={activeNode} schema={schema} isOverlay />
               </div>
             ) : (
-              <div className="shadow-2xl border border-accent-primary bg-bg-surface opacity-95 p-5 rounded-lg w-full max-w-4xl select-none pointer-events-none flex items-center gap-3 border-l-4" style={{ borderLeftColor: "var(--accent-secondary)" }}>
-                <GripVertical className="w-3.5 h-3.5 text-text-tertiary shrink-0" />
-                <span className="text-xs font-bold uppercase tracking-wider text-text-primary">
-                  {activeNode.conjunction} GROUP
-                </span>
-                <Badge variant={activeNode.conjunction === "AND" ? "and" : "or"}>
-                  {activeNode.children.length} item{activeNode.children.length === 1 ? "" : "s"}
-                </Badge>
+              <div className="shadow-2xl select-none pointer-events-none w-full max-w-4xl opacity-95">
+                <QueryGroup
+                  group={activeNode}
+                  schema={schema}
+                  depth={0}
+                  isOverlay
+                />
               </div>
             )
           ) : null}

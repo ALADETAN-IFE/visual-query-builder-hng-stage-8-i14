@@ -16,6 +16,7 @@ import { CSS } from "@dnd-kit/utilities";
 interface QueryRuleProps {
   rule: QueryRuleType;
   schema: Schema;
+  isOverlay?: boolean;
 }
 
 const VALUELESS_OPERATORS = new Set(["is_null", "is_not_null"]);
@@ -27,9 +28,15 @@ function getDefaultValue(field: SchemaField): unknown {
   return "";
 }
 
-export default function QueryRule({ rule, schema }: QueryRuleProps) {
+export default function QueryRule({
+  rule,
+  schema,
+  isOverlay = false,
+}: QueryRuleProps) {
   const validationErrors = useQueryStore((state) => state.validationErrors);
-  const validationTriggered = useQueryStore((state) => state.validationTriggered);
+  const validationTriggered = useQueryStore(
+    (state) => state.validationTriggered,
+  );
   const updateRule = useQueryStore((state) => state.updateRule);
   const removeNode = useQueryStore((state) => state.removeNode);
 
@@ -40,17 +47,19 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: rule.id });
+  } = useSortable({ id: rule.id, disabled: isOverlay });
 
-  const style = {
+  const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
-    transition,
-    opacity: isDragging ? 0.5 : 1,
-    position: "relative" as const,
+    transition: isDragging ? "none" : isOverlay ? undefined : transition,
+    // Use visibility:hidden so the slot stays reserved but element is invisible
+    visibility: isDragging ? "hidden" : "visible",
+    position: "relative",
     zIndex: isDragging ? 50 : "auto",
   };
 
-  const field = schema.fields.find((item) => item.id === rule.field) ?? schema.fields[0];
+  const field =
+    schema.fields.find((item) => item.id === rule.field) ?? schema.fields[0];
   const operators = getOperatorsForType(field.type);
 
   const fieldError = validationTriggered
@@ -108,7 +117,13 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
           <Input
             className="w-24 bg-bg-surface"
             inputSize="sm"
-            type={field.type === "date" ? "date" : field.type === "number" ? "number" : "text"}
+            type={
+              field.type === "date"
+                ? "date"
+                : field.type === "number"
+                  ? "number"
+                  : "text"
+            }
             value={String(values[0] ?? "")}
             placeholder="Min"
             error={valueError}
@@ -122,7 +137,13 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
           <Input
             className="w-24 bg-bg-surface"
             inputSize="sm"
-            type={field.type === "date" ? "date" : field.type === "number" ? "number" : "text"}
+            type={
+              field.type === "date"
+                ? "date"
+                : field.type === "number"
+                  ? "number"
+                  : "text"
+            }
             value={String(values[1] ?? "")}
             placeholder="Max"
             onChange={(event) =>
@@ -143,7 +164,9 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
           error={!!valueError}
           value={String(rule.value ?? "")}
           options={field.options}
-          onChange={(event) => updateRule(rule.id, { value: event.target.value })}
+          onChange={(event) =>
+            updateRule(rule.id, { value: event.target.value })
+          }
         />
       );
     }
@@ -159,7 +182,9 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
             { value: "true", label: "True" },
             { value: "false", label: "False" },
           ]}
-          onChange={(event) => updateRule(rule.id, { value: event.target.value })}
+          onChange={(event) =>
+            updateRule(rule.id, { value: event.target.value })
+          }
         />
       );
     }
@@ -170,10 +195,16 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
           className="min-w-40 bg-bg-surface"
           inputSize="sm"
           type="text"
-          value={Array.isArray(rule.value) ? rule.value.join(", ") : String(rule.value ?? "")}
+          value={
+            Array.isArray(rule.value)
+              ? rule.value.join(", ")
+              : String(rule.value ?? "")
+          }
           placeholder="Comma-separated values"
           error={valueError}
-          onChange={(event) => updateRule(rule.id, { value: event.target.value })}
+          onChange={(event) =>
+            updateRule(rule.id, { value: event.target.value })
+          }
         />
       );
     }
@@ -182,7 +213,13 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
       <Input
         className="w-32 bg-bg-surface"
         inputSize="sm"
-        type={field.type === "date" ? "date" : field.type === "number" ? "number" : "text"}
+        type={
+          field.type === "date"
+            ? "date"
+            : field.type === "number"
+              ? "number"
+              : "text"
+        }
         value={String(rule.value ?? "")}
         placeholder={field.placeholder}
         error={valueError}
@@ -199,19 +236,26 @@ export default function QueryRule({ rule, schema }: QueryRuleProps) {
   return (
     <div
       ref={setNodeRef}
-      style={style}
       className={cn(
-        "flex flex-wrap items-center gap-3 bg-bg-elevated p-3 rounded-lg border transition-all duration-150 animate-fade-in",
+        "flex flex-wrap items-center gap-3 bg-bg-elevated p-3 rounded-lg border animate-fade-in",
         valueError || fieldError || operatorError
           ? "border-accent-danger/40"
           : "border-border-default",
-        isDragging && "shadow-lg scale-[1.01]"
+        isOverlay &&
+          "shadow-2xl border-accent-secondary/60 scale-[1.01] border-l-4",
       )}
+      style={{
+        ...style,
+        borderLeftColor: isOverlay ? "var(--accent-secondary)" : undefined,
+      }}
     >
       <div
-        className="cursor-grab text-text-tertiary hover:text-text-primary mr-1 shrink-0 flex items-center justify-center p-1 rounded hover:bg-bg-inset transition-colors"
-        {...attributes}
-        {...listeners}
+        className={cn(
+          "text-text-tertiary hover:text-text-primary mr-1 shrink-0 flex items-center justify-center p-1 rounded hover:bg-bg-inset transition-colors",
+          isOverlay ? "cursor-grabbing" : "cursor-grab",
+        )}
+        {...(!isOverlay ? attributes : {})}
+        {...(!isOverlay ? listeners : {})}
         aria-label="Drag rule handle"
       >
         <GripVertical className="w-3.5 h-3.5" />
