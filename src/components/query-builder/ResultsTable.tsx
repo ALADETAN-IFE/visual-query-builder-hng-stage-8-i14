@@ -1,12 +1,23 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
-import { Play, ChevronLeft, ChevronRight, SearchX, ChevronsUpDown, ArrowUp, ArrowDown, Loader2, Star } from "lucide-react";
+import {
+  Play,
+  ChevronLeft,
+  ChevronRight,
+  SearchX,
+  ChevronsUpDown,
+  ArrowUp,
+  ArrowDown,
+  Loader2,
+  Star,
+} from "lucide-react";
 import { QueryGroup } from "@/lib/types";
 import { getSchemaById } from "@/lib/schemas";
 import { runQuerySimulator } from "@/lib/simulator";
 import { MockRecord } from "@/lib/mock-data";
 import { formatDate } from "@/lib/utils";
+import { useQueryStore } from "@/store/query-store";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 
@@ -20,18 +31,25 @@ type SortConfig = {
   direction: "asc" | "desc" | null;
 };
 
-export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps) {
+export default function ResultsTable({
+  schemaId,
+  rootGroup,
+}: ResultsTableProps) {
   const schema = getSchemaById(schemaId);
+  const runValidation = useQueryStore((state) => state.runValidation);
   const [loading, setLoading] = useState(false);
-  
+
   // Initialize results state with current simulated query to avoid mount/reload flashes
   const [results, setResults] = useState<MockRecord[]>(() => {
     return runQuerySimulator(rootGroup, schemaId);
   });
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: "", direction: null });
+  const [sortConfig, setSortConfig] = useState<SortConfig>({
+    key: "",
+    direction: null,
+  });
 
   // Automatically evaluate query ONLY when schema changes
   useEffect(() => {
@@ -46,6 +64,10 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
 
   // Execute query simulator manually with loading shimmer
   const handleRunQuery = () => {
+    runValidation();
+    const errors = useQueryStore.getState().validationErrors;
+    if (errors.length > 0) return;
+    
     setLoading(true);
     setCurrentPage(1);
 
@@ -101,14 +123,24 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
       // Handle boolean
       if (typeof aVal === "boolean" && typeof bVal === "boolean") {
         return dir === "asc"
-          ? (aVal === bVal ? 0 : aVal ? -1 : 1)
-          : (aVal === bVal ? 0 : aVal ? 1 : -1);
+          ? aVal === bVal
+            ? 0
+            : aVal
+              ? -1
+              : 1
+          : aVal === bVal
+            ? 0
+            : aVal
+              ? 1
+              : -1;
       }
 
       // Handle default strings
       const aStr = String(aVal).toLowerCase();
       const bStr = String(bVal).toLowerCase();
-      return dir === "asc" ? aStr.localeCompare(bStr) : bStr.localeCompare(aStr);
+      return dir === "asc"
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
     });
   }, [results, sortConfig]);
 
@@ -124,18 +156,25 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
     if (sortConfig.key !== key || !sortConfig.direction) {
       return <ChevronsUpDown className="w-3.5 h-3.5 opacity-40 shrink-0" />;
     }
-    return sortConfig.direction === "asc"
-      ? <ArrowUp className="w-3.5 h-3.5 text-accent-primary shrink-0 animate-fade-in" />
-      : <ArrowDown className="w-3.5 h-3.5 text-accent-primary shrink-0 animate-fade-in" />;
+    return sortConfig.direction === "asc" ? (
+      <ArrowUp className="w-3.5 h-3.5 text-accent-primary shrink-0 animate-fade-in" />
+    ) : (
+      <ArrowDown className="w-3.5 h-3.5 text-accent-primary shrink-0 animate-fade-in" />
+    );
   };
 
   // Render record fields dynamically and prettily
   const renderCell = (fieldId: string, value: MockRecord[keyof MockRecord]) => {
-    if (value === null || value === undefined) return <span className="text-text-tertiary font-mono">null</span>;
+    if (value === null || value === undefined)
+      return <span className="text-text-tertiary font-mono">null</span>;
 
     // Formatting rules
     if (fieldId === "price" || fieldId === "totalAmount") {
-      return <span className="font-semibold text-text-primary font-mono">${Number(value).toFixed(2)}</span>;
+      return (
+        <span className="font-semibold text-text-primary font-mono">
+          ${Number(value).toFixed(2)}
+        </span>
+      );
     }
 
     if (fieldId === "rating") {
@@ -149,36 +188,66 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
 
     if (typeof value === "boolean") {
       return value ? (
-        <Badge variant="success" className="px-2 py-0.5 text-[0.6875rem]">True</Badge>
+        <Badge variant="success" className="px-2 py-0.5 text-[0.6875rem]">
+          True
+        </Badge>
       ) : (
-        <Badge variant="danger" className="px-2 py-0.5 text-[0.6875rem]">False</Badge>
+        <Badge variant="danger" className="px-2 py-0.5 text-[0.6875rem]">
+          False
+        </Badge>
       );
     }
 
     if (fieldId === "createdAt" || fieldId === "orderDate") {
       if (typeof value === "number") {
-        return <span className="text-text-secondary">{formatDate(new Date(value))}</span>;
+        return (
+          <span className="text-text-secondary">
+            {formatDate(new Date(value))}
+          </span>
+        );
       }
-      return <span className="text-text-secondary">{formatDate(String(value))}</span>;
+      return (
+        <span className="text-text-secondary">{formatDate(String(value))}</span>
+      );
     }
 
     // Pretty enums/status tags
     if (fieldId === "status") {
       const valStr = String(value);
       if (valStr === "active" || valStr === "paid" || valStr === "shipped") {
-        return <Badge variant="success" className="capitalize">{valStr}</Badge>;
+        return (
+          <Badge variant="success" className="capitalize">
+            {valStr}
+          </Badge>
+        );
       }
       if (valStr === "pending") {
-        return <Badge variant="warning" className="capitalize">{valStr}</Badge>;
+        return (
+          <Badge variant="warning" className="capitalize">
+            {valStr}
+          </Badge>
+        );
       }
       if (valStr === "cancelled") {
-        return <Badge variant="danger" className="capitalize">{valStr}</Badge>;
+        return (
+          <Badge variant="danger" className="capitalize">
+            {valStr}
+          </Badge>
+        );
       }
-      return <Badge variant="default" className="capitalize">{valStr}</Badge>;
+      return (
+        <Badge variant="default" className="capitalize">
+          {valStr}
+        </Badge>
+      );
     }
 
     if (fieldId === "id" || fieldId === "orderId") {
-      return <span className="font-mono text-text-secondary font-semibold select-all">{value}</span>;
+      return (
+        <span className="font-mono text-text-secondary font-semibold select-all">
+          {value}
+        </span>
+      );
     }
 
     return <span className="text-text-primary">{String(value)}</span>;
@@ -206,7 +275,13 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
           variant="primary"
           size="sm"
           className="bg-accent-primary flex items-center h-9 relative"
-          icon={loading ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Play className="w-3.5 h-3.5 mr-1 text-text-inverse" />}
+          icon={
+            loading ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" />
+            ) : (
+              <Play className="w-3.5 h-3.5 mr-1 text-text-inverse" />
+            )
+          }
           onClick={handleRunQuery}
           disabled={loading}
         >
@@ -246,7 +321,10 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
               <tbody>
                 {sortedResults.length === 0 ? (
                   <tr className="hover:bg-transparent">
-                    <td colSpan={schema.fields.length} className="p-8 text-center align-middle">
+                    <td
+                      colSpan={schema.fields.length}
+                      className="p-8 text-center align-middle"
+                    >
                       <div className="flex flex-col items-center justify-center py-4 text-center shrink-0 animate-fade-in">
                         <div className="p-2.5 bg-accent-warning/10 rounded-full mb-3 text-accent-warning">
                           <SearchX className="w-5 h-5 animate-pulse" />
@@ -255,7 +333,9 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
                           No matching records found
                         </h4>
                         <p className="text-[0.6875rem] text-text-tertiary max-w-xs mx-auto leading-relaxed">
-                          Your query filter set did not match any documents in the <strong>{schema.label ?? schemaId}</strong> dataset. Check your rule values or operators.
+                          Your query filter set did not match any documents in
+                          the <strong>{schema.label ?? schemaId}</strong>{" "}
+                          dataset. Check your rule values or operators.
                         </p>
                       </div>
                     </td>
@@ -283,11 +363,19 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
             <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
               <div className="flex items-center gap-2">
                 <span className="text-[0.6875rem] text-text-tertiary">
-                  Showing <span className="font-semibold text-text-secondary">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+                  Showing{" "}
+                  <span className="font-semibold text-text-secondary">
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>{" "}
+                  to{" "}
                   <span className="font-semibold text-text-secondary">
                     {Math.min(currentPage * pageSize, sortedResults.length)}
                   </span>{" "}
-                  of <span className="font-semibold text-text-secondary">{sortedResults.length}</span> items
+                  of{" "}
+                  <span className="font-semibold text-text-secondary">
+                    {sortedResults.length}
+                  </span>{" "}
+                  items
                 </span>
                 <select
                   value={pageSize}
@@ -315,14 +403,24 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </Button>
-                  
+
                   {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .filter((p) => Math.abs(p - currentPage) <= 1 || p === 1 || p === totalPages)
+                    .filter(
+                      (p) =>
+                        Math.abs(p - currentPage) <= 1 ||
+                        p === 1 ||
+                        p === totalPages,
+                    )
                     .map((p, index, array) => {
-                      const showEllipsis = index > 0 && p - array[index - 1] > 1;
+                      const showEllipsis =
+                        index > 0 && p - array[index - 1] > 1;
                       return (
                         <React.Fragment key={p}>
-                          {showEllipsis && <span className="text-text-tertiary px-1 text-xs">...</span>}
+                          {showEllipsis && (
+                            <span className="text-text-tertiary px-1 text-xs">
+                              ...
+                            </span>
+                          )}
                           <button
                             onClick={() => setCurrentPage(p)}
                             className={`w-8 h-8 text-xs font-bold rounded-lg transition-all cursor-pointer ${
@@ -342,7 +440,9 @@ export default function ResultsTable({ schemaId, rootGroup }: ResultsTableProps)
                     size="sm"
                     className="w-8 h-8 p-0"
                     disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((c) => Math.min(totalPages, c + 1))}
+                    onClick={() =>
+                      setCurrentPage((c) => Math.min(totalPages, c + 1))
+                    }
                     aria-label="Next page"
                   >
                     <ChevronRight className="w-4 h-4" />
