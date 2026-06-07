@@ -91,9 +91,20 @@ function evaluateRule(
       return normRecordVal >= from && normRecordVal <= to;
     }
     case "in_array": {
-      const rawArr = Array.isArray(ruleValue) ? ruleValue : [ruleValue];
-      const normalizedArr = rawArr.map((v) => normalize(v));
-      return normalizedArr.includes(normRecordVal);
+      const rawArr = Array.isArray(ruleValue)
+        ? ruleValue
+        : String(ruleValue ?? "")
+            .split(",")
+            .map((v) => v.trim())
+            .filter(Boolean);
+
+      return rawArr.some((v) => {
+        const normalizedV = normalize(v);
+        if (typeof normRecordVal === "string") {
+          return normRecordVal.includes(String(normalizedV));
+        }
+        return normRecordVal === normalizedV;
+      });
     }
     case "regex": {
       try {
