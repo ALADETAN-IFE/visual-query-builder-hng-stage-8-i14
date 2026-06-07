@@ -29,8 +29,10 @@ export default function SavePresetModal({
 
   useEffect(() => {
     if (isOpen) {
-      setTitle("");
-      setError(null);
+      setTimeout(() => {
+        setTitle("");
+        setError(null); 
+      }, 500);
     }
   }, [isOpen]);
 
