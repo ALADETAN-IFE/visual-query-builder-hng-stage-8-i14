@@ -320,6 +320,12 @@ export const useQueryStore = create<QueryStore>((set, get) => {
         set({ validationErrors: [], validationTriggered: true });
         return;
       }
+      
+      if (rootGroup.children.length === 0) {
+        set({ validationErrors: [], validationTriggered: true });
+        return;
+      }
+
       set({
         validationErrors: validateQueryTree(rootGroup, schema),
         validationTriggered: true,
