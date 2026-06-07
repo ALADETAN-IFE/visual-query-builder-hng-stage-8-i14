@@ -47,6 +47,18 @@ export default function RootLayout({
       className={`${sora.variable} ${jetbrainsMono.variable}`}
       suppressHydrationWarning
     >
+      <head>
+    <script
+      dangerouslySetInnerHTML={{
+        __html: `
+          try {
+            var t = localStorage.getItem('querycraft-theme');
+            if (t) document.documentElement.setAttribute('data-theme', t);
+          } catch(e) {}
+        `,
+      }}
+    />
+  </head>
       <body
         className="min-h-screen flex flex-col antialiased"
       >
