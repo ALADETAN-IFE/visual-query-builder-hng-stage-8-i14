@@ -10,8 +10,8 @@ export const OPERATOR_DEFINITIONS: OperatorDefinition[] = [
   { value: "less_than", label: "Less Than", symbol: "<", types: ["number", "date"] },
   { value: "between", label: "Between", symbol: "BETWEEN", types: ["number", "date"] },
   { value: "in_array", label: "In List", symbol: "IN (...)", types: ["enum", "string", "number"] },
-  { value: "is_null", label: "Is Empty / Null", symbol: "IS NULL", types: ["string", "number", "enum", "date"] },
-  { value: "is_not_null", label: "Is Defined / Not Null", symbol: "IS NOT NULL", types: ["string", "number", "enum", "date"] },
+  { value: "is_null", label: "Is Empty / Null", symbol: "IS NULL", types: ["string", "number", "date"] },
+  { value: "is_not_null", label: "Is Defined / Not Null", symbol: "IS NOT NULL", types: ["string", "number", "date"] },
   { value: "regex", label: "Matches Regex", symbol: "REGEX", types: ["string"] },
 ];
 
