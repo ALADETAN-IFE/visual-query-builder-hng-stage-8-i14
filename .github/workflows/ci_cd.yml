@@ -1,0 +1,61 @@
+name: QueryCraft CI/CD Pipeline
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  # ------------------------
+  # 1️⃣ BUILD & CHECK JOB
+  # ------------------------
+  build:
+    name: Build QueryCraft
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 10
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Dependencies
+        run: pnpm install
+
+      - name: Lint with ESLint
+        run: pnpm run lint
+
+      - name: Build Application
+        run: pnpm run build
+
+  # ------------------------
+  # 3️⃣ DEPLOY JOB
+  # ------------------------
+  deploy:
+    name: Trigger Vercel Deployment
+    needs: build
+    if: |
+      github.event_name == 'push' &&
+      (github.ref == 'refs/heads/main')
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - name: Create deployment for production
+        if: github.ref == 'refs/heads/main'
+        run: |
+          echo "Requesting Production Build..."
+          curl -i -X POST "${{ secrets.VERCEL_DEPLOY_HOOK_MAIN }}"
