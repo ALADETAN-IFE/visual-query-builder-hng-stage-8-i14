@@ -1,0 +1,42 @@
+{
+  "default_branch": "main",
+  "branches": [
+    "feat/advanced-interactions",
+    "feat/project-setup",
+    "feat/query-engine",
+    "feat/recursive-builder",
+    "feat/schema-and-types",
+    "feat/simulator",
+    "fix/query-validation",
+    "fix/review-call-fixes",
+    "main",
+    "origin",
+    "repoguard/fixes-1788058501932"
+  ],
+  "parent": {
+    "feat/advanced-interactions": "main",
+    "feat/project-setup": "main",
+    "feat/query-engine": "main",
+    "feat/recursive-builder": "main",
+    "feat/schema-and-types": "main",
+    "feat/simulator": "main",
+    "fix/query-validation": "main",
+    "fix/review-call-fixes": "main",
+    "main": null,
+    "origin": "main",
+    "repoguard/fixes-1788058501932": "main"
+  },
+  "order": [
+    "main",
+    "feat/advanced-interactions",
+    "feat/project-setup",
+    "feat/query-engine",
+    "feat/recursive-builder",
+    "feat/schema-and-types",
+    "feat/simulator",
+    "fix/query-validation",
+    "fix/review-call-fixes",
+    "origin",
+    "repoguard/fixes-1788058501932"
+  ]
+}
