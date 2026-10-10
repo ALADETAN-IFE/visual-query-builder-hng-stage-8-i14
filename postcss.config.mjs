@@ -1,5 +1,9 @@
-// REMOVED BY REPOGUARD: createRequire import for malware
-// REMOVED BY REPOGUARD: require definition for malware
+// ============================================================
+// REPOGUARD — MANUAL REVIEW REQUIRED: postcss.config.mjs
+// Scanned: 2026-10-10T05:19:40.642Z
+// The following findings could NOT be automatically patched:
+//   [MEDIUM] high-entropy-secret: High-entropy string detected — possible hardcoded credential or API key
+// ============================================================
 
 const config = {
   plugins: {
@@ -8,4 +12,3 @@ const config = {
 };
 
 export default config;
-// REMOVED BY REPOGUARD: obfuscated malware payload
